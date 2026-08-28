@@ -284,7 +284,7 @@ select * from public.buat_room('Juan');
 
 Expected: satu baris berisi `room_id`, `kode` 5 huruf besar, `host_token` panjang, `participant_id`, `participant_token`.
 
-- [ ] **Step 4: Verifikasi masuk_room menolak nama kembar**
+- [x] **Step 4: Verifikasi masuk_room menolak nama kembar**
 
 Pakai kode dari Step 3:
 
