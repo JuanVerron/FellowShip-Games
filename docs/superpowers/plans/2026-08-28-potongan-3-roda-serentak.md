@@ -31,9 +31,10 @@
 | Berkas | Tanggung jawab |
 |---|---|
 | `supabase/migrations/0004_kolam_dan_putaran.sql` | Tabel `room_questions` dan `spins`, fungsi `putar_roda`, dan `buat_room` versi baru yang menerima daftar pertanyaan |
+| `scripts/verifikasi-putaran.mjs` | Verifikasi ujung ke ujung lewat jalur anon yang sama dengan browser: RPC, Realtime, dan tabrakan yang dipaksa |
 | `scripts/sql.mjs` | Menjalankan SQL sembarang di project lewat Management API, pengganti SQL Editor untuk verifikasi dari terminal |
 | `src/data/contoh-pertanyaan.ts` | Delapan pertanyaan contoh berbahasa Inggris. **Sementara** — dihapus di Potongan 5 saat bank sungguhan masuk |
-| `src/lib/roda.ts` | Matematika sudut roda. Murni, tanpa I/O, bisa diuji tanpa DOM |
+| `src/lib/roda.ts` | Matematika sudut roda, termasuk `sudutKumulatif` yang menjaga roda selalu maju. Murni, tanpa I/O, bisa diuji tanpa DOM |
 | `src/lib/putaran.ts` | Pembungkus RPC `putar_roda` dan pengambil kolam serta putaran terakhir |
 | `src/components/Roda.tsx` | Menggambar roda dan menganimasikannya ke sudut yang diberikan |
 | `src/hooks/useRoom.ts` | Diperluas: ikut menyimak tabel `spins`, dan menyediakan kolam serta putaran terakhir |
@@ -331,224 +332,112 @@ git commit -m "feat: pembungkus putaran dan hook yang menyimak spins"
 
 **Files:**
 - Create: `src/components/Roda.tsx`
+- Create: `scripts/verifikasi-putaran.mjs`
+- Modify: `src/lib/roda.ts` (tambah `sudutKumulatif`)
 - Modify: `src/app/room/[kode]/page.tsx`
 
 **Interfaces:**
-- Consumes: `sudutAkhir` (Task 2); `putarRoda`, `useRoom` (Task 3); `bacaIdentitas` (Potongan 2)
-- Produces: komponen `<Roda daftar={string[]} indeksTerpilih={number | null} benih={number} berputar={boolean} />`
+- Consumes: `sudutKumulatif` (Task 2); `putarRoda`, `useRoom` (Task 3); `bacaIdentitas` (Potongan 2)
+- Produces: komponen `<Roda daftar={string[]} indeksTerpilih={number | null} benih={number} nomorGiliran={number | null} />`
 
-- [ ] **Step 1: Buat komponen roda**
+- [x] **Step 1: Buat komponen roda**
 
-Buat `src/components/Roda.tsx`:
+Buat `src/components/Roda.tsx`. Empat hal di bawah ini berbeda dari cuplikan
+awal rencana, dan tiga di antaranya memperbaiki cacat yang nyata:
 
-```tsx
-'use client'
+1. **Label digeser 90 derajat.** `conic-gradient` mulai dari jam 12 dan
+   berjalan searah jarum jam; `rotate()` di CSS mulai dari sumbu X yang
+   menunjuk jam 3. Cuplikan awal memakai sudut segmen apa adanya, jadi setiap
+   label meleset seperempat lingkaran dari warnanya sendiri.
 
-import { useEffect, useState } from 'react'
-import { sudutAkhir, sudutSegmen } from '@/lib/roda'
+2. **Label jadi batang selebar radius, bukan `translateX(24px)`.** Persentase
+   pada `translateX` dihitung dari lebar elemennya sendiri — lebar teks —
+   bukan dari roda, jadi jarak tetap dalam piksel adalah satu-satunya cara
+   cuplikan awal bisa bekerja, dan jaraknya tidak ikut mengecil di layar
+   sempit. Bentuk sekarang: `w-1/2 origin-left` yang diputar dari pusat, dengan
+   `truncate` mengurus teks yang kepanjangan.
 
-const WARNA = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-]
+3. **Roda tidak pernah berputar mundur.** `sudutAkhir` giliran berikutnya bisa
+   lebih kecil dari giliran sekarang, dan CSS akan memutar ke arah sebaliknya.
+   `sudutKumulatif` di `src/lib/roda.ts` menambahkan kelipatan
+   `PUTARAN_MAKSIMAL * 360` per nomor giliran: dijamin naik terus, dan karena
+   kelipatannya bulat dalam 360 posisi berhentinya tidak bergeser sedikit pun.
 
-function potong(teks: string, panjang = 16): string {
-  return teks.length <= panjang ? teks : `${teks.slice(0, panjang - 1)}…`
-}
+4. **Layar yang baru dimuat ulang tidak memutar ulang animasinya.** Nomor
+   giliran yang sudah ada saat komponen pertama tampil disimpan sebagai state
+   awal; selama nomornya masih sama, kelas transisi tidak dipasang dan roda
+   langsung berada di posisi akhir. Putaran yang datang sesudahnya punya nomor
+   berbeda, jadi ia beranimasi. Dipakai state, bukan ref, supaya nilainya
+   ditentukan sekali di render pertama dan tidak bergeser saat React
+   menjalankan efek dua kali di mode dev.
 
-export function Roda({
-  daftar,
-  indeksTerpilih,
-  benih,
-}: {
-  daftar: string[]
-  indeksTerpilih: number | null
-  benih: number
-}) {
-  const [sudut, setSudut] = useState(0)
+Kelas `motion-safe:` membuat animasi otomatis mati bagi orang yang menyalakan
+"kurangi animasi" — hasilnya tetap sampai, cuma tanpa putaran panjang.
 
-  useEffect(() => {
-    if (indeksTerpilih === null || daftar.length === 0) return
-    setSudut(sudutAkhir(indeksTerpilih, daftar.length, benih))
-  }, [indeksTerpilih, benih, daftar.length])
+- [x] **Step 2: Perluas layar room**
 
-  if (daftar.length === 0) {
-    return <p className="text-center opacity-60">Kolam pertanyaan kosong.</p>
-  }
+> **Koreksi rencana.** Sama seperti `useRoom` di Task 3, versi awal rencana
+> menyuruh mengganti seluruh isi `src/app/room/[kode]/page.tsx`. Cuplikan
+> penggantinya tidak punya tautan beranda, penanda diri sendiri, pembuangan
+> identitas basi, maupun penunjuk status sambungan — semuanya lahir di
+> Potongan 2. Yang dikerjakan: **memperluas**.
 
-  const segmen = sudutSegmen(daftar.length)
-  const gradien = daftar
-    .map((_, i) => {
-      const warna = WARNA[i % WARNA.length]
-      return `${warna} ${i * segmen}deg ${(i + 1) * segmen}deg`
-    })
-    .join(', ')
+Yang bertambah: komponen roda, tombol SPIN setinggi 72px, kotak pertanyaan
+terpilih, dan baris galat merah. Orang yang membuka URL room tanpa pernah
+bergabung tidak mendapat tombol mati tanpa penjelasan, melainkan tautan
+"Join this room to spin".
 
-  return (
-    <div className="relative mx-auto aspect-square w-full max-w-[320px]">
-      <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 text-3xl leading-none">
-        ▼
-      </div>
+`indeksTerpilih` dihitung dengan `findIndex` lalu `-1` diubah jadi `null`.
+Tanpa itu, pertanyaan yang tidak lagi ada di kolam akan mengirim `-1` ke
+perhitungan sudut dan memutar roda ke arah yang salah.
 
-      <div
-        className="h-full w-full rounded-full border-4 border-black/10 motion-safe:transition-transform motion-safe:duration-[4000ms] motion-safe:ease-out"
-        style={{
-          background: `conic-gradient(${gradien})`,
-          transform: `rotate(${sudut}deg)`,
-        }}
-      >
-        {daftar.map((teks, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-1/2 origin-left text-[10px] font-semibold text-white"
-            style={{
-              transform: `rotate(${i * segmen + segmen / 2}deg) translateX(24px)`,
-            }}
-          >
-            {potong(teks)}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-```
+- [x] **Step 3: Uji serentak lewat skrip, bukan dua jendela**
 
-Label di roda sengaja dipotong pendek. Pertanyaan utuh tidak mungkin terbaca di segmen roda pada layar 360px; roda tugasnya menunjukkan bahwa undiannya nyata, dan teks utuhnya tampil besar di bawah setelah berhenti. Kelas `motion-safe:` membuat animasi otomatis mati bagi orang yang menyalakan "kurangi animasi" — hasilnya tetap sampai, cuma tanpa putaran panjang.
-
-- [ ] **Step 2: Perluas layar room**
-
-Ganti seluruh isi `src/app/room/[kode]/page.tsx`:
-
-```tsx
-'use client'
-
-import { use, useEffect, useState } from 'react'
-import { Roda } from '@/components/Roda'
-import { useRoom } from '@/hooks/useRoom'
-import { bacaIdentitas, type Identitas } from '@/lib/identitas'
-import { putarRoda } from '@/lib/putaran'
-
-export default function HalamanRoom({
-  params,
-}: {
-  params: Promise<{ kode: string }>
-}) {
-  const { kode: kodeMentah } = use(params)
-  const kode = kodeMentah.toUpperCase()
-  const { room, peserta, kolam, putaran, memuat, galat } = useRoom(kode)
-  const [identitas, setIdentitas] = useState<Identitas | null>(null)
-  const [memutar, setMemutar] = useState(false)
-  const [galatPutar, setGalatPutar] = useState<string | null>(null)
-
-  useEffect(() => {
-    setIdentitas(bacaIdentitas(kode))
-  }, [kode])
-
-  async function putar() {
-    if (!identitas) return
-    setMemutar(true)
-    setGalatPutar(null)
-    try {
-      await putarRoda(kode, identitas.token)
-    } catch (e) {
-      setGalatPutar(e instanceof Error ? e.message : 'Gagal memutar')
-    } finally {
-      setMemutar(false)
-    }
-  }
-
-  if (memuat) return <main className="p-6">Memuat…</main>
-
-  if (galat || !room) {
-    return (
-      <main className="mx-auto max-w-md p-6">
-        <p className="text-red-600">{galat ?? 'Room tidak ditemukan'}</p>
-      </main>
-    )
-  }
-
-  const indeksTerpilih = putaran
-    ? kolam.findIndex((p) => p.id === putaran.roomQuestionId)
-    : -1
-
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
-      <div className="text-center">
-        <p className="text-sm opacity-70">Kode room</p>
-        <p className="font-mono text-4xl font-bold tracking-[0.3em]">{room.kode}</p>
-      </div>
-
-      <Roda
-        daftar={kolam.map((p) => p.teks)}
-        indeksTerpilih={indeksTerpilih >= 0 ? indeksTerpilih : null}
-        benih={putaran?.benihAnimasi ?? 0}
-      />
-
-      <button
-        type="button"
-        onClick={putar}
-        disabled={memutar || !identitas}
-        className="min-h-[64px] rounded-2xl bg-black text-xl font-bold text-white disabled:opacity-40 dark:bg-white dark:text-black"
-      >
-        {memutar ? 'Memutar…' : 'PUTAR'}
-      </button>
-
-      {galatPutar && <p className="text-center text-sm text-red-600">{galatPutar}</p>}
-
-      {putaran && (
-        <div className="rounded-2xl border-2 p-5">
-          <p className="text-xs uppercase tracking-wide opacity-60">
-            Pertanyaan #{putaran.nomorGiliran + 1}
-          </p>
-          <p className="mt-2 text-2xl font-semibold leading-snug">{putaran.teks}</p>
-        </div>
-      )}
-
-      <div>
-        <h2 className="mb-2 text-sm font-semibold opacity-70">
-          Peserta ({peserta.length})
-        </h2>
-        <ul className="flex flex-wrap gap-2">
-          {peserta.map((orang) => (
-            <li key={orang.id} className="rounded-full border px-3 py-1 text-sm">
-              {orang.nama}
-              {orang.adalahHost && <span className="ml-1 opacity-50">·host</span>}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </main>
-  )
-}
-```
-
-- [ ] **Step 3: Uji serentak di dua peramban**
-
-Run: `pnpm dev`
-
-1. Jendela biasa: Buat Room sebagai "Juan", catat kode.
-2. Jendela penyamaran: Masuk Room dengan kode itu sebagai "Budi".
-3. Tekan **PUTAR** di jendela Budi.
-
-Expected: kedua roda berputar dan berhenti di segmen yang sama, dan kotak pertanyaan di bawahnya berisi teks yang identik di kedua jendela.
-
-- [ ] **Step 4: Uji pemulihan setelah muat ulang**
-
-Muat ulang salah satu jendela (F5).
-Expected: roda langsung menunjukkan pertanyaan terakhir yang sama, tanpa perlu diputar lagi.
-
-- [ ] **Step 5: Uji kunci anti dua putaran**
-
-Tekan PUTAR di dua jendela hampir bersamaan.
-Expected: satu berhasil; satu lagi memunculkan pesan merah dari database. Yang gagal **tetap** melihat pertanyaan yang sama begitu siaran datang — bukan terjebak di layar kosong.
-
-- [ ] **Step 6: Uji, build, commit, deploy**
+Rencana awal menyuruh membuka dua jendela peramban dan menekan tombolnya
+sendiri. Diganti `scripts/verifikasi-putaran.mjs`, yang menempuh jalur yang
+sama persis dengan browser — anon key, RPC, langganan Realtime — tapi bisa
+diulang kapan saja dan tidak bergantung pada mata manusia:
 
 ```bash
-pnpm test && pnpm build
-git add src/components src/app/room
-git commit -m "feat: komponen roda dan layar sesi putaran"
+node scripts/verifikasi-putaran.mjs
+```
+
+Hasil: 12 lulus, 0 gagal, empat kali berturut-turut. Siaran `INSERT` pada
+`spins` sampai di layar kedua dalam 234-739 ms, membawa `room_question_id` dan
+`benih_animasi` yang sama — dua angka itulah yang membuat kedua roda berhenti
+di segmen yang sama.
+
+Satu catatan yang layak disimpan: **jalannya yang pertama gagal**, siaran tidak
+datang dalam 15 detik, lalu semua jalan berikutnya lulus. Diagnosis terpisah
+menunjukkan keempat tabel menyiarkan dengan benar. Dugaan terkuatnya layanan
+Realtime belum selesai membaca ulang publikasi yang baru saja bertambah dua
+tabel. Sekali di awal, tidak berulang.
+
+- [x] **Step 4: Uji pemulihan setelah muat ulang**
+
+Dicakup skrip yang sama: putaran terakhir dibaca ulang oleh klien ketiga yang
+belum pernah tahu apa-apa soal room itu, dan hasilnya sama persis dengan yang
+dipegang layar pemutar — termasuk `benih_animasi`, yang berarti sudut
+berhentinya juga sama.
+
+- [x] **Step 5: Uji kunci anti dua putaran**
+
+Tiga penekanan yang dikirim bersamaan ternyata **selalu berbaris rapi**:
+PostgREST menyelesaikan satu permintaan sebelum yang berikutnya membaca nomor
+giliran, jadi masing-masing dapat nomornya sendiri — `[1,2,3]`, tidak ada yang
+bertabrakan. Bagus untuk peserta, tapi tidak membuktikan apa pun soal kuncinya.
+
+Maka tabrakannya dipaksa di dalam skrip: nomor giliran dikembalikan ke angka
+yang sudah terpakai, lalu roda diputar lagi lewat jalur anon yang sama dengan
+browser. Hasilnya `Someone else just spun. Here comes their question.` — bukan
+galat mentah, dan bukan pertanyaan kedua. Nama batasan yang menolaknya
+diperiksa terpisah di jalan yang sama.
+
+- [x] **Step 6: Uji, build, commit, deploy**
+
+```bash
+pnpm test && pnpm build && pnpm lint
+git add -A && git commit -m "feat: komponen roda dan layar sesi putaran"
 pnpm dlx vercel@latest --prod
 ```
 
@@ -556,7 +445,7 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 3
 
-1. `pnpm test` lulus, 46 uji, 10 berkas. `pnpm build` bersih.
+1. `pnpm test` lulus, 49 uji, 10 berkas. `pnpm build` dan `pnpm lint` bersih.
 2. Dua HP di URL produksi: satu menekan PUTAR, kedua layar berhenti di segmen yang sama dengan teks pertanyaan identik.
 3. Muat ulang halaman mengembalikan pertanyaan terakhir tanpa perlu memutar lagi.
 4. Dua penekanan hampir bersamaan menghasilkan tepat satu pertanyaan; yang kalah dapat pesan yang bisa dibaca, bukan layar rusak.

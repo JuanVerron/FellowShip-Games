@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { Roda } from '@/components/Roda'
 import { TautanBeranda } from '@/components/TautanBeranda'
 import { useRoom } from '@/hooks/useRoom'
 import {
@@ -9,6 +11,7 @@ import {
   identitasMasihSah,
   kunciIdentitas,
 } from '@/lib/identitas'
+import { putarRoda } from '@/lib/putaran'
 
 const WARNA_STATUS = {
   tersambung: 'bg-green-500',
@@ -41,8 +44,10 @@ export default function RuangTunggu({
 }) {
   const { kode } = use(params)
   const kodeBesar = kode.toUpperCase()
-  const { room, peserta, memuat, galat, statusSaluran, diperbaruiPada } =
+  const { room, peserta, kolam, putaran, memuat, galat, statusSaluran, diperbaruiPada } =
     useRoom(kodeBesar)
+  const [memutar, setMemutar] = useState(false)
+  const [galatPutar, setGalatPutar] = useState<string | null>(null)
 
   // Identitas hidup di localStorage, yang tidak ada saat halaman dirender di
   // server. useSyncExternalStore memang dibuat untuk ini: render di server
@@ -77,6 +82,22 @@ export default function RuangTunggu({
     }
   }, [memuat, peserta, identitas, kodeBesar])
 
+  async function putar() {
+    if (!identitas) return
+    setMemutar(true)
+    setGalatPutar(null)
+    try {
+      await putarRoda(kodeBesar, identitas.token)
+    } catch (e) {
+      // Yang kalah adu cepat berhenti di sini, tapi tidak terjebak: siaran dari
+      // putaran yang menang tetap datang lewat useRoom, jadi layarnya ikut
+      // sampai di pertanyaan yang sama beberapa saat kemudian.
+      setGalatPutar(e instanceof Error ? e.message : 'Could not spin the wheel.')
+    } finally {
+      setMemutar(false)
+    }
+  }
+
   const [sekarang, setSekarang] = useState(() => Date.now())
   useEffect(() => {
     const pewaktu = setInterval(() => setSekarang(Date.now()), 1000)
@@ -103,6 +124,14 @@ export default function RuangTunggu({
 
   const usia = usiaDetik(diperbaruiPada, sekarang)
 
+  // Roda diberi indeks di kolam, bukan id: yang berputar adalah posisi segmen.
+  // findIndex mengembalikan -1 kalau pertanyaannya sudah tidak ada di kolam,
+  // dan -1 yang lolos ke sudutAkhir akan memutar roda ke arah yang salah.
+  const indeksDitemukan = putaran
+    ? kolam.findIndex((p) => p.id === putaran.roomQuestionId)
+    : -1
+  const indeksTerpilih = indeksDitemukan >= 0 ? indeksDitemukan : null
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
       <TautanBeranda />
@@ -112,6 +141,46 @@ export default function RuangTunggu({
         <p className="font-mono text-5xl font-bold tracking-[0.3em]">{room.kode}</p>
         <p className="mt-2 text-sm opacity-70">Share this code with your friends</p>
       </div>
+
+      <Roda
+        daftar={kolam.map((p) => p.teks)}
+        indeksTerpilih={indeksTerpilih}
+        benih={putaran?.benihAnimasi ?? 0}
+        nomorGiliran={putaran?.nomorGiliran ?? null}
+      />
+
+      {identitas ? (
+        <button
+          type="button"
+          onClick={putar}
+          disabled={memutar || kolam.length === 0}
+          className="min-h-[72px] rounded-2xl bg-black text-2xl font-bold tracking-wide text-white disabled:opacity-40 dark:bg-white dark:text-black"
+        >
+          {memutar ? 'Spinning…' : 'SPIN'}
+        </button>
+      ) : (
+        <Link
+          href="/masuk"
+          className="flex min-h-[72px] items-center justify-center rounded-2xl border-2 text-lg font-semibold"
+        >
+          Join this room to spin
+        </Link>
+      )}
+
+      {galatPutar && (
+        <p role="alert" className="text-center text-sm text-red-600">
+          {galatPutar}
+        </p>
+      )}
+
+      {putaran && (
+        <div className="rounded-2xl border-2 p-5">
+          <p className="text-xs uppercase tracking-wide opacity-60">
+            Question #{putaran.nomorGiliran + 1}
+          </p>
+          <p className="mt-2 text-2xl font-semibold leading-snug">{putaran.teks}</p>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-3 font-semibold">Participants ({peserta.length})</h2>
