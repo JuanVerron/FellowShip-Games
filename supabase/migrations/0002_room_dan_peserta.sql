@@ -82,7 +82,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room_id uuid;
@@ -123,7 +123,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room public.rooms%rowtype;
@@ -150,8 +150,12 @@ begin
     raise exception 'sesi sudah dimulai dan ditutup untuk peserta baru';
   end if;
 
+  -- Kolomnya wajib diawali nama tabel. 'returns table (room_id ...)' membuat
+  -- room_id jadi variabel keluaran, dan tanpa awalan ini Postgres menolak
+  -- dengan 'column reference "room_id" is ambiguous'.
   if exists (select 1 from public.participants
-              where room_id = v_room.id and nama = trim(p_nama)) then
+              where participants.room_id = v_room.id
+                and participants.nama = trim(p_nama)) then
     raise exception 'nama sudah dipakai di room ini';
   end if;
 

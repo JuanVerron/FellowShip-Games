@@ -144,7 +144,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room_id uuid;
@@ -185,7 +185,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room public.rooms%rowtype;
@@ -212,8 +212,12 @@ begin
     raise exception 'sesi sudah dimulai dan ditutup untuk peserta baru';
   end if;
 
+  -- Kolomnya wajib diawali nama tabel. 'returns table (room_id ...)' membuat
+  -- room_id jadi variabel keluaran, dan tanpa awalan ini Postgres menolak
+  -- dengan 'column reference "room_id" is ambiguous'.
   if exists (select 1 from public.participants
-              where room_id = v_room.id and nama = trim(p_nama)) then
+              where participants.room_id = v_room.id
+                and participants.nama = trim(p_nama)) then
     raise exception 'nama sudah dipakai di room ini';
   end if;
 
@@ -259,16 +263,18 @@ begin
 end $$;
 ```
 
+`set search_path = public, extensions` — bukan `public` saja. Supabase memasang `pgcrypto` ke skema `extensions`, sehingga `gen_random_bytes` tidak terlihat oleh fungsi yang search_path-nya cuma `public`; keduanya gagal saat dipanggil dengan `function gen_random_bytes(integer) does not exist`. Menambahkan `extensions` aman karena skema itu tidak bisa ditulis peran `anon`, jadi tidak membuka jalan pembajakan search_path yang justru dicegah oleh pengaturan ini.
+
 Perhatikan `masuk_room` sudah menangani opsi `izinkan_join_telat` walau tombol untuk mengaturnya baru dibuat di Potongan 5. Aturannya ditulis sekali di tempat yang benar; yang menyusul cuma cara mengubah nilainya.
 
-- [ ] **Step 2: Terapkan ke Supabase**
+- [x] **Step 2: Terapkan ke Supabase**
 
 Dashboard Supabase → **SQL Editor** → **New query** → tempel seluruh isi berkas → **Run**.
 Expected: `Success. No rows returned`.
 
 Dua `alter publication` di akhir berkas dibungkus pemeriksaan `pg_publication_tables`. Tanpa itu, menjalankan berkas ini dua kali melempar galat "table is already member of publication" yang **menggagalkan sisa eksekusi** — bukan sekadar peringatan yang bisa diabaikan. Dengan pembungkus itu berkasnya aman dijalankan ulang.
 
-- [ ] **Step 3: Verifikasi buat_room bekerja**
+- [x] **Step 3: Verifikasi buat_room bekerja**
 
 Di SQL Editor:
 
