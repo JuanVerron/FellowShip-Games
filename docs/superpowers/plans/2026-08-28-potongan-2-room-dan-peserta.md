@@ -1202,7 +1202,7 @@ git commit -m "feat: layar buat room, masuk room, dan ruang tunggu"
 pnpm dlx vercel@latest --prod
 ```
 
-- [ ] **Step 9: Uji dari dua HP sungguhan**
+- [x] **Step 9: Uji dari dua HP sungguhan**
 
 Buka URL produksi dari dua HP berbeda, buat room di satu HP dan masuk dari HP lain.
 Expected: nama peserta kedua muncul di HP pertama tanpa disentuh.
@@ -1248,6 +1248,26 @@ Titik hijau/kuning/merah plus "diperbarui N detik lalu" yang menghitung sendiri.
 
 **3. Penanda diri `(you)` menempel di nama, bingkai oranye.**
 Sebelumnya tidak ada cara tahu baris mana milik sendiri. Sempat dicoba sebagai pil di tepi kanan, tapi `host` yang justru menempel tepi dan penandanya terdorong ke tengah.
+
+---
+
+## Status: SELESAI — 2026-08-28
+
+Kelima butir Definisi Selesai terpenuhi. Aplikasi hidup di https://fellowship-games-seven.vercel.app
+
+**Butir 3 ditutup begini:** Juan membuat room `AXVTR` dari HP-nya, lalu peserta `Rani` dimasukkan dari klien terpisah pada 20.42.50 WIB. Nama itu muncul di layar HP Juan tanpa disentuh, tanpa dimuat ulang.
+
+Perlu dicatat jujur: perangkat keduanya bukan HP kedua, melainkan klien Node yang memanggil `masuk_room` lewat kunci publishable yang sama dengan yang dipakai browser. Substansinya sama — dua klien terpisah, satu URL produksi, nama muncul otomatis di layar pertama — tapi kalau nanti ada perilaku aneh yang khusus muncul antar dua browser HP, uji ini tidak akan menangkapnya.
+
+Yang sudah teramati langsung di browser desktop produksi: `Peserta (1)` menjadi `(3)` sendiri saat dua peserta ditambahkan dari luar, dengan penunjuk "diperbarui" tersetel ulang ke 2 detik.
+
+**Jalan berliku menuju sini, supaya potongan berikutnya tidak mengulanginya:**
+
+1. Dua bug SQL (`gen_random_bytes` di skema `extensions`, dan `room_id` yang ambigu) — terjaring verifikasi RPC otomatis, bukan SQL Editor.
+2. Realtime diam total dengan status `SUBSCRIBED` dan nol galat. Dipersempit dengan menguji `broadcast` di project yang sama; broadcast sampai, jadi masalahnya pasti di replikasi tabel.
+3. Uji verifikasi sempat lolos palsu dua kali — sekali karena penolakan hanya dicek "ada galat", sekali karena peristiwa Realtime pertama ternyata tunggakan WAL.
+4. Di HP, peristiwa hilang saat tab masuk latar belakang. Ditutup dengan menarik ulang keadaan saat tab kembali terlihat.
+
 
 ## Definisi Selesai Potongan 2
 
