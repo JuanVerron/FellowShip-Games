@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+export const PESAN_BARIS_HILANG = 'baris app_health tidak ditemukan'
+
 export type HasilKesehatan =
   | { sehat: true; disentuhPada: string }
   | { sehat: false; alasan: string }
@@ -18,7 +20,7 @@ export async function cekKesehatan(
   }
 
   if (!data) {
-    return { sehat: false, alasan: 'baris app_health tidak ditemukan' }
+    return { sehat: false, alasan: PESAN_BARIS_HILANG }
   }
 
   return {

@@ -41,6 +41,8 @@ Task 2 dan seterusnya macet tanpa ini. Kerjakan dulu.
 |---|---|
 | `src/lib/supabase.ts` | Membuat klien Supabase dari variabel lingkungan, dan gagal keras kalau variabelnya kosong |
 | `src/lib/health.ts` | Menerjemahkan hasil query `app_health` jadi bentuk hasil yang jelas. Tidak tahu-menahu soal HTTP maupun cara klien dibuat |
+| `src/lib/cron.ts` | Memeriksa header `Authorization` cron terhadap `CRON_SECRET`, dengan perbandingan tahan-waktu |
+| `src/lib/tanggapan.ts` | Menyaring alasan galat sebelum keluar ke publik: pesan buatan kita sendiri lewat, pesan dari Postgres diganti pesan umum |
 | `src/lib/__tests__/health.test.ts` | Uji `cekKesehatan` dengan klien palsu, tanpa menyentuh database |
 | `src/app/api/health/route.ts` | Permukaan HTTP untuk membaca kesehatan. Tipis: rakit klien, panggil `cekKesehatan`, terjemahkan ke kode status |
 | `src/app/api/keep-alive/route.ts` | Permukaan HTTP untuk **menulis** ke database. Dipanggil cron harian; menulis, bukan membaca, karena yang dihitung Supabase sebagai aktivitas adalah perubahan data |
@@ -163,6 +165,13 @@ Buat `.env.example` (masuk repo, tanpa nilai):
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+CRON_SECRET=
+```
+
+`CRON_SECRET` melindungi `/api/keep-alive`; lihat Task 4 dan Task 5 Step 5. Untuk lokal, isi `.env.local` dengan nilai acak apa saja:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 ```
 
 Buat `.env.local` (tidak masuk repo) dan isi dengan dua nilai dari langkah P3:
@@ -561,8 +570,25 @@ Kalau merah dan berbunyi "wajib diisi", `.env.local` belum terbaca — hentikan 
 
 - [ ] **Step 5: Uji route cron secara manual**
 
-Buka `http://localhost:3000/api/keep-alive` di browser.
+Route ini terkunci `CRON_SECRET`, jadi tidak bisa lagi dibuka lewat browser — browser tidak mengirim header `Authorization`. Pakai curl:
+
+```bash
+RAHASIA=$(grep '^CRON_SECRET=' .env.local | cut -d= -f2-)
+curl -s -H "Authorization: Bearer $RAHASIA" http://localhost:3000/api/keep-alive
+```
+
 Expected: JSON `{"ok":true,"disentuhPada":"…"}` dengan waktu yang **lebih baru** dari yang muncul di Step 4. Tekan tombol uji koneksi lagi untuk memastikan waktunya memang bergerak.
+
+Lalu pastikan kuncinya benar-benar mengunci — tanpa header, dan dengan rahasia yang keliru:
+
+```bash
+curl -s -w " <- %{http_code}
+" http://localhost:3000/api/keep-alive
+curl -s -w " <- %{http_code}
+" -H "Authorization: Bearer salah" http://localhost:3000/api/keep-alive
+```
+
+Expected: dua-duanya `{"ok":false} <- 401`. Kalau salah satunya menulis ke database, kuncinya tidak terpasang.
 
 - [x] **Step 6: Pastikan uji otomatis masih lulus**
 
@@ -602,7 +628,9 @@ Buat `vercel.json`:
 }
 ```
 
-Paket Hobby membatasi cron ke sekali sehari, dan sekali sehari sudah jauh lebih rapat dari ambang pause Supabase yang 7 hari. `0 3 * * *` berarti pukul 03.00 UTC, yaitu 10.00 WIB — sengaja di jam yang tidak bertabrakan dengan waktu fellowship.
+Paket Hobby membatasi cron ke sekali sehari, dan sekali sehari sudah jauh lebih rapat dari ambang pause Supabase yang 7 hari.
+
+`0 3 * * *` di paket Hobby bukan berarti tepat pukul 03.00 UTC. Vercel menyebar beban akun gratis, jadi pemanggilannya jatuh **di mana saja dalam rentang 03.00–03.59 UTC**, yaitu 10.00–10.59 WIB. Rentang sejam ini tidak masalah untuk menahan pause, dan tetap sengaja dijauhkan dari waktu fellowship.
 
 - [x] **Step 2: Commit sebelum deploy**
 
@@ -626,9 +654,18 @@ Jawab: buat project baru, nama `fellowship-games`, direktori root `./`.
 ```bash
 pnpm dlx vercel@latest env add NEXT_PUBLIC_SUPABASE_URL production
 pnpm dlx vercel@latest env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+pnpm dlx vercel@latest env add CRON_SECRET production
 ```
 
-Tempel nilai yang sama dengan `.env.local` saat diminta. Ulangi untuk lingkungan `preview` kalau ingin pratinjau ikut jalan.
+Dua yang pertama: tempel nilai yang sama dengan `.env.local`. Ulangi untuk lingkungan `preview` kalau ingin pratinjau ikut jalan.
+
+`CRON_SECRET` berbeda sifatnya dan wajib ada. Namanya harus **persis** `CRON_SECRET` — Vercel mengenali nama itu secara khusus dan otomatis menyertakan nilainya sebagai header `Authorization: Bearer <nilai>` tiap kali cron berjalan. Nilainya bebas asal acak dan minimal 16 karakter; tidak harus sama dengan yang di `.env.local`. Bikin yang baru:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
+```
+
+Kalau variabel ini lupa didaftarkan, cron akan tetap berjalan tapi selalu dijawab 401, dan project Supabase pelan-pelan berjalan menuju pause tanpa tanda apa pun di antarmuka. Step 8 di bawah yang menangkapnya.
 
 - [ ] **Step 6: Deploy ke produksi**
 
@@ -644,6 +681,8 @@ Expected: teks hijau "Tersambung…". Ini bukti Potongan 1 selesai — bukan lul
 
 Buka dashboard Vercel → project `fellowship-games` → tab **Cron Jobs**.
 Expected: satu entri `/api/keep-alive`, jadwal `0 3 * * *`, berstatus aktif.
+
+Terdaftar belum berarti berhasil. Setelah pemanggilan pertama lewat, tekan **View Logs** di baris itu dan pastikan tanggapannya **200**, bukan 401. Kalau 401, `CRON_SECRET` di Step 5 belum terdaftar atau nilainya beda.
 
 - [ ] **Step 9: Commit berkas konfigurasi Vercel**
 
@@ -667,10 +706,16 @@ Semua yang bisa dikerjakan tanpa akun Supabase dan Vercel sudah selesai dan ter-
 | Permukaan | Hasil |
 |---|---|
 | `GET /` | 200, merender judul dan tombol `min-h-[44px]` |
-| `GET /api/health` | 503 `{"sehat":false,"alasan":"NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi"}` |
-| `GET /api/keep-alive` | 503, pesan sama |
+| `GET /api/health` | 503, alasan "…wajib diisi" |
+| `GET /api/keep-alive` tanpa header | **401** `{"ok":false}`, tanpa alasan |
+| `GET /api/keep-alive` `Bearer` salah | **401** |
+| `GET /api/keep-alive` `Bearer undefined` | **401** |
+| `GET /api/keep-alive` rahasia benar tanpa awalan `Bearer` | **401** |
+| `GET /api/keep-alive` `Bearer` benar | lolos kunci, lalu 503 di dinding env |
 
-Dua 503 itu bukan kegagalan, melainkan jalur gagal-keras dari Task 3 Step 3 yang bekerja persis seperti rancangannya: menyebut nama variabel yang kurang, bukan galat jaringan yang membingungkan. Begitu `.env.local` diisi, keduanya berbalik jadi 200 tanpa perubahan kode.
+503 di atas bukan kegagalan, melainkan jalur gagal-keras dari Task 3 Step 3 yang bekerja persis seperti rancangannya: menyebut nama variabel yang kurang, bukan galat jaringan yang membingungkan. Begitu `.env.local` diisi, keduanya berbalik jadi 200 tanpa perubahan kode.
+
+Penyaring alasan juga diuji ujung-ke-ujung dengan build produksi yang kredensialnya sengaja diarahkan ke host yang tidak ada. Klien menerima `"Ada yang salah di sisi server. Coba lagi sebentar lagi."`, sementara `TypeError: fetch failed` yang sebenarnya hanya muncul di log server.
 
 **Yang masih tertahan, berikut pemicunya.** Semuanya menunggu prasyarat P1–P4, tidak ada yang menunggu kode:
 
@@ -685,10 +730,10 @@ Urutannya mengikat: P1–P3 dan Task 2 harus lebih dulu, karena deploy yang env-
 
 Semua harus benar, bukan sebagian:
 
-1. `pnpm test` lulus, 4 uji.
+1. `pnpm test` lulus, 16 uji.
 2. URL `*.vercel.app` dibuka dari HP dan tombol uji koneksi menyala hijau.
-3. `/api/keep-alive` mengembalikan `{"ok":true}` dan waktunya bergerak tiap dipanggil.
-4. Cron `/api/keep-alive` terdaftar aktif di dashboard Vercel.
+3. `/api/keep-alive` mengembalikan `{"ok":true}` saat dipanggil dengan `Authorization: Bearer <CRON_SECRET>` dan waktunya bergerak tiap dipanggil, serta `401` saat dipanggil tanpa header itu.
+4. Cron `/api/keep-alive` terdaftar aktif di dashboard Vercel, dan log pemanggilan pertamanya berkode 200.
 5. Tidak ada metode pembayaran tersambung di Vercel maupun Supabase.
 
 Setelah kelimanya terpenuhi, rencana untuk Potongan 2 baru ditulis.
@@ -696,6 +741,18 @@ Setelah kelimanya terpenuhi, rencana untuk Potongan 2 baru ditulis.
 ---
 
 ## Catatan Perubahan terhadap PRD
+
+**2026-08-28 — `/api/keep-alive` dikunci `CRON_SECRET`, dan alasan galat disaring sebelum keluar ke publik.**
+Rencana ini semula membiarkan `/api/keep-alive` terbuka untuk siapa saja, dan meneruskan `error.message` dari Postgres apa adanya ke pemanggil.
+
+**Alasan penguncian:** dokumentasi Vercel menegaskan endpoint cron dapat dijangkau siapa pun yang tahu URL-nya. Endpoint yang **menulis** ke database dan tidak terkunci berarti siapa saja bisa memanggilnya berulang-ulang, dan tiap panggilan memakan jatah pemanggilan fungsi Vercel. `CLAUDE.md` menyebut nol biaya sebagai syarat mati justru karena akun Hobby **berhenti melayani** saat limit tercapai — jadi lubang ini tidak berujung tagihan, melainkan aplikasi yang mati di tengah sesi fellowship. Vercel menyediakan penjagaannya secara bawaan: variabel bernama persis `CRON_SECRET` otomatis dikirim sebagai header `Authorization: Bearer <nilai>` saat cron berjalan.
+
+**Alasan penyaringan:** pesan galat Postgres memuat nama tabel, kolom, dan batasan. Di Potongan 1 isinya cuma `app_health`, jadi taruhannya kecil — tapi rencana ini sendiri menyebut pola `health.ts` akan dipakai ulang di semua modul domain berikutnya, dan mulai Potongan 2 modul-modul itu memeriksa `host_token` dan token peserta. Menyaring sekarang jauh lebih murah daripada menambal enam modul nanti.
+
+Penyaringnya sengaja ditaruh di batas HTTP, bukan di `health.ts`. Fungsi domain tetap mengembalikan alasan yang sebenarnya — itu yang membuatnya bisa diuji dan berguna di log — dan hanya route handler yang memutuskan apa yang pantas dilihat publik. Pesan yang kita tulis sendiri (`PESAN_ENV_KURANG`, `PESAN_BARIS_HILANG`) tetap lolos utuh karena isinya sudah kita ketahui aman dan justru menolong saat memperbaiki.
+
+**2026-08-28 — Cron Hobby berjalan dalam rentang sejam, bukan pada menit yang ditulis.**
+Rencana semula menyebut `0 3 * * *` berarti tepat 10.00 WIB. Dokumentasi Vercel menyatakan pemanggilan cron akun Hobby disebar di mana saja dalam jam yang ditentukan. Tidak ada yang perlu diubah di kode; catatan jamnya saja yang dikoreksi supaya tidak ada yang menunggu di menit yang salah saat memeriksa log.
 
 **2026-08-28 — Cron anti-pause pindah dari GitHub Actions ke Vercel Cron.**
 PRD bagian 8 dan Build Order Potongan 1 menyebut jadwal GitHub Actions mingguan. Rencana ini memakai Vercel Cron harian.
