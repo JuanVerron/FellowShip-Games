@@ -6,10 +6,10 @@ Enam potongan, dikerjakan berurutan. Tiap potongan punya berkas rencananya sendi
 
 Ini yang harus disiapkan sendiri, tidak bisa diwakilkan:
 
-- [ ] Akun [supabase.com](https://supabase.com) (login GitHub), organization paket **Free**
-- [ ] Project Supabase bernama `fellowship-games`, region **Southeast Asia (Singapore)**, password database disimpan
-- [ ] `Project URL` dan `anon public` key dari **Settings → API**
-- [ ] Akun [vercel.com](https://vercel.com) (login GitHub), paket **Hobby**, tanpa metode pembayaran
+- [x] Akun [supabase.com](https://supabase.com) (login GitHub), organization paket **Free**
+- [x] Project Supabase bernama `fellowship-games`, region **Southeast Asia (Singapore)**, password database disimpan
+- [x] `Project URL` dan `anon public` key dari **Settings → API**
+- [x] Akun [vercel.com](https://vercel.com) (login GitHub), paket **Hobby**, tanpa metode pembayaran
 
 Detailnya ada di bagian "Prasyarat Manual" di rencana Potongan 1.
 
@@ -17,7 +17,7 @@ Detailnya ada di bagian "Prasyarat Manual" di rencana Potongan 1.
 
 | # | Berkas rencana | Hasil yang bisa dibuka dan diuji | Selesai |
 |---|---|---|---|
-| 1 | `2026-08-28-potongan-1-tulang-punggung-online.md` | URL publik hidup di Vercel, tersambung Supabase, cron anti-pause jalan | [ ] |
+| 1 | `2026-08-28-potongan-1-tulang-punggung-online.md` | URL publik hidup di Vercel, tersambung Supabase, cron anti-pause jalan | hampir — tinggal uji dari HP |
 | 2 | `2026-08-28-potongan-2-room-dan-peserta.md` | Buat room dapat kode; orang lain masuk; daftar peserta hidup di semua HP | [ ] |
 | 3 | `2026-08-28-potongan-3-roda-serentak.md` | Roda berputar dan berhenti di pertanyaan yang sama di semua layar | [ ] |
 | 4 | `2026-08-28-potongan-4-giliran-dan-aturan-sesi.md` | Urutan diacak, tombol terkunci per giliran, host memindah giliran | [ ] |

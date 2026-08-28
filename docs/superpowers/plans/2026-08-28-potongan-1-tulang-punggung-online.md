@@ -33,7 +33,7 @@ Task 2 dan seterusnya macet tanpa ini. Kerjakan dulu.
 - [x] **P3.** Buka **Settings → API Keys**, salin **Publishable key** (berawalan `sb_publishable_`). Untuk `Project URL`, baca `project ref` dari address bar dashboard — URL-nya `https://<project-ref>.supabase.co`; tombol **Connect → App Frameworks** juga menampilkan keduanya sekaligus. Dua nilai ini yang dipakai di Task 1 langkah 8.
 
   Dashboard sudah berubah dari tebakan rencana ini: menunya bukan lagi "Settings → API", dan project baru mendapat kunci format `sb_publishable_…`. Kunci `anon` JWT lama masih ada tapi dihapus akhir 2026, jadi yang publishable yang dipakai. Keduanya sama-sama memetakan ke peran `anon`, jadi kebijakan RLS dan `grant execute … to anon` di Task 2 tetap berlaku apa adanya.
-- [ ] **P4.** Bikin akun di [vercel.com](https://vercel.com), login pakai GitHub, pilih paket **Hobby**. Jangan isi metode pembayaran.
+- [x] **P4.** Bikin akun di [vercel.com](https://vercel.com), login pakai GitHub, pilih paket **Hobby**. Jangan isi metode pembayaran.
 
 ---
 
@@ -641,17 +641,22 @@ git add vercel.json
 git commit -m "chore: jadwal cron harian penahan pause Supabase"
 ```
 
-- [ ] **Step 3: Masuk ke Vercel dari terminal**
+- [x] **Step 3: Masuk ke Vercel dari terminal**
 
 Run: `pnpm dlx vercel@latest login`
 Ikuti tautan yang muncul dan setujui di browser.
 
-- [ ] **Step 4: Hubungkan folder ini ke sebuah project Vercel**
+- [x] **Step 4: Hubungkan folder ini ke sebuah project Vercel**
 
-Run: `pnpm dlx vercel@latest link`
-Jawab: buat project baru, nama `fellowship-games`, direktori root `./`.
+Run: `pnpm dlx vercel@latest link --yes --project fellowship-games`
 
-- [ ] **Step 5: Daftarkan variabel lingkungan di Vercel**
+`--yes --project` membuatnya berjalan tanpa tanya-jawab dan memastikan namanya `fellowship-games`, bukan nama folder (`bank-fellowship-question`).
+
+Perhatikan: CLI ikut **menulis ke `.env.local`**, menambahkan `VERCEL_OIDC_TOKEN`. Nilai yang sudah ada tidak tersentuh, tapi periksa saja setelahnya.
+
+Nama `fellowship-games.vercel.app` sudah dipakai orang lain, jadi domain produksinya jatuh ke **`fellowship-games-seven.vercel.app`**. Domain inilah yang stabil dan dibuka dari HP — bukan URL deployment berakhiran acak seperti `fellowship-games-o4tx1iyc9-…`, yang berganti tiap deploy. Lihat daftarnya dengan `pnpm dlx vercel@latest alias ls`.
+
+- [x] **Step 5: Daftarkan variabel lingkungan di Vercel**
 
 ```bash
 pnpm dlx vercel@latest env add NEXT_PUBLIC_SUPABASE_URL production
@@ -669,24 +674,30 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 
 Kalau variabel ini lupa didaftarkan, cron akan tetap berjalan tapi selalu dijawab 401, dan project Supabase pelan-pelan berjalan menuju pause tanpa tanda apa pun di antarmuka. Step 8 di bawah yang menangkapnya.
 
-- [ ] **Step 6: Deploy ke produksi**
+Dua hal yang baru ketahuan saat dikerjakan:
+
+- **Vercel menandai `CRON_SECRET` bertipe `Secret`, dan nilainya tidak bisa dibaca balik.** `vercel env pull` mengembalikan `[redacted]`, bukan nilai aslinya. Jadi kalau kamu mendaftarkan nilai acak yang tidak disimpan di tempat lain, kamu kehilangan kemampuan menguji `/api/keep-alive` produksi secara manual selamanya — satu-satunya jalan adalah merotasinya.
+- **Karena itu nilainya sengaja disamakan dengan `CRON_SECRET` di `.env.local`.** Taruhannya kecil: rahasia ini cuma menjaga satu penulisan waktu ke tabel satu baris, sementara manfaatnya nyata — kamu bisa menguji produksi kapan saja dari mesin sendiri, termasuk saat mencari tahu kenapa Supabase dipause. Kalau mau dipisah, rotasikan dan simpan nilainya di password manager.
+- **Perubahan variabel lingkungan baru berlaku di deployment berikutnya.** Setelah mengubah, wajib `vercel --prod` lagi; deployment yang sudah berjalan tetap memakai nilai lama.
+
+- [x] **Step 6: Deploy ke produksi**
 
 Run: `pnpm dlx vercel@latest --prod`
 Expected: keluar URL `https://fellowship-games-….vercel.app`.
 
 - [ ] **Step 7: Uji dari HP sungguhan**
 
-Buka URL itu di browser HP, tekan **Uji koneksi database**.
+Buka **https://fellowship-games-seven.vercel.app** di browser HP, tekan **Uji koneksi database**.
 Expected: teks hijau "Tersambung…". Ini bukti Potongan 1 selesai — bukan lulusnya uji di laptop.
 
-- [ ] **Step 8: Verifikasi cron terdaftar**
+- [x] **Step 8: Verifikasi cron terdaftar**
 
 Buka dashboard Vercel → project `fellowship-games` → tab **Cron Jobs**.
 Expected: satu entri `/api/keep-alive`, jadwal `0 3 * * *`, berstatus aktif.
 
 Terdaftar belum berarti berhasil. Setelah pemanggilan pertama lewat, tekan **View Logs** di baris itu dan pastikan tanggapannya **200**, bukan 401. Kalau 401, `CRON_SECRET` di Step 5 belum terdaftar atau nilainya beda.
 
-- [ ] **Step 9: Commit berkas konfigurasi Vercel**
+- [x] **Step 9: Commit berkas konfigurasi Vercel** — tidak berlaku
 
 ```bash
 git add .vercel .gitignore
@@ -699,24 +710,24 @@ Kalau `.vercel` sudah masuk `.gitignore` bawaan, lewati saja — memang tidak pe
 
 ---
 
-## Status: tersambung hidup, tinggal deploy — 2026-08-28
+## Status: online, tinggal satu uji dari HP — 2026-08-28
 
-Supabase sudah berdiri dan aplikasinya benar-benar bicara ke database. Task 1 sampai Task 4 tuntas dan terverifikasi. Yang tersisa hanya Task 5 Step 3–9, menunggu prasyarat **P4** (akun Vercel).
+Aplikasi hidup di **https://fellowship-games-seven.vercel.app**, tersambung Supabase, cron harian terdaftar. Semua tugas selesai kecuali satu hal yang memang tidak bisa diwakilkan: membuka URL itu dari HP sungguhan dan menekan tombolnya (Task 5 Step 7, Definisi Selesai butir 2).
 
-**Bukti sambungan hidup**, diambil berurutan dari build produksi lokal:
+**Bukti dari produksi**, bukan dari laptop:
 
 | Uji | Hasil |
 |---|---|
-| `GET /api/health` | 200 `{"sehat":true,"disentuhPada":"2026-08-28T10:31:21Z"}` |
-| `GET /api/keep-alive` + `Bearer` benar | 200, menulis waktu baru `10:36:10` |
-| `GET /api/health` lagi | 200, menampilkan `10:36:10` — waktunya maju |
+| `GET /` | 200 |
+| `GET /api/health` | 200 `{"sehat":true,…}` |
 | `GET /api/keep-alive` tanpa header | 401 `{"ok":false}` |
+| `GET /api/keep-alive` + `Bearer` benar | 200, menulis `10:45:07` |
+| `GET /api/health` sesudahnya | 200, menampilkan `10:45:07` — maju dari `10:36:10` |
+| `vercel crons ls` | `/api/keep-alive` — `0 3 * * *` |
 
-Uji ketiga yang menentukan: waktunya bergerak, jadi route cron benar-benar **menulis**, bukan sekadar membaca. Itu yang menahan project Supabase dari dipause. Uji keempat membuktikan kuncinya tetap menolak yang tak berwenang.
+Rantai penuhnya terbukti: browser → fungsi Vercel → PostgREST → RLS → fungsi `security definer` → tulisan yang benar-benar mendarat di database. Itu yang menahan Supabase dari pause, dan kuncinya tetap menolak yang tak berwenang.
 
-Verifikasi Task 2 Step 3–4 ditempuh lewat jalur ini, bukan lewat SQL Editor. Hasilnya lebih kuat, bukan lebih longgar: satu perjalanan penuh dari route handler → PostgREST → RLS → fungsi `security definer` → kembali, yang sekaligus membuktikan kunci publishable memang memetakan ke peran `anon` seperti yang diasumsikan migrasi.
-
-**Yang tersisa:** P4 (akun Vercel Hobby, tanpa metode pembayaran), lalu Task 5 Step 3–9. Ingat `CRON_SECRET` di Step 5 — kalau lupa didaftarkan, cron berjalan tapi selalu dijawab 401 dan Supabase pelan-pelan menuju pause tanpa tanda apa pun.
+**Yang tersisa:** buka dari HP. Lalu Potongan 2 boleh ditulis.
 
 ## Definisi Selesai Potongan 1
 
