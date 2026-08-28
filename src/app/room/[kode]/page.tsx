@@ -258,13 +258,18 @@ export default function HalamanRoom({
   const giliranIniSudahDiputar =
     putaran !== null && putaran.nomorGiliran === room.nomorGiliranSekarang
 
-  const labelTombol = giliranIniSudahDiputar
-    ? 'Already spun'
-    : sibuk
-      ? 'Spinning…'
-      : giliranku || !pemilik
-        ? 'SPIN'
-        : `SPIN FOR ${pemilik.nama.toUpperCase()}`
+  // Label tombol ikut menjelaskan kewenangan yang sedang dipakai. Host yang
+  // menekan di giliran orang lain membaca "SPIN FOR BUDI", supaya kewenangan
+  // yang tidak biasa itu terlihat. Peserta biasa yang bukan gilirannya membaca
+  // "WAITING FOR BUDI" — tombolnya toh mati, dan menuliskan "SPIN FOR BUDI" di
+  // sana malah menjanjikan sesuatu yang tidak boleh dia lakukan.
+  function labelPutar(): string {
+    if (giliranIniSudahDiputar) return 'Already spun'
+    if (sibuk) return 'Spinning…'
+    if (giliranku || !pemilik) return 'SPIN'
+    const siapa = pemilik.nama.toUpperCase()
+    return adalahHost ? `SPIN FOR ${siapa}` : `WAITING FOR ${siapa}`
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 p-6">
@@ -306,7 +311,7 @@ export default function HalamanRoom({
           }
           className="min-h-[72px] rounded-2xl bg-black text-xl font-bold tracking-wide text-white disabled:opacity-40 dark:bg-white dark:text-black"
         >
-          {labelTombol}
+          {labelPutar()}
         </button>
       ) : (
         <Link
