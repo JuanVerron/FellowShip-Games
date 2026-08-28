@@ -207,7 +207,7 @@ git commit -m "chore: kerangka Next.js, Tailwind, dan Vitest"
 - Consumes: project Supabase dari langkah P2
 - Produces: tabel `public.app_health` (satu baris, `id = 1`, kolom `disentuh_pada timestamptz`) yang boleh dibaca `anon`; fungsi `public.sentuh_kesehatan()` yang boleh dijalankan `anon` dan mengembalikan `timestamptz`
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
 Buat `supabase/migrations/0001_app_health.sql`:
 
@@ -271,7 +271,7 @@ select public.sentuh_kesehatan();
 
 Expected: satu nilai waktu, dan lebih baru dari nilai di Step 3.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0001_app_health.sql
@@ -294,7 +294,7 @@ git commit -m "feat: tabel app_health dan fungsi sentuh_kesehatan"
   - `type HasilKesehatan = { sehat: true; disentuhPada: string } | { sehat: false; alasan: string }`
   - `cekKesehatan(klien: SupabaseClient): Promise<HasilKesehatan>`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/health.test.ts`:
 
@@ -350,12 +350,12 @@ describe('cekKesehatan', () => {
 
 Uji ketiga ada karena kasusnya nyata dan diam: migrasi berhasil dijalankan tapi baris `insert` gagal, sehingga query lolos tanpa error tapi tidak mengembalikan apa-apa. Tanpa uji ini, keadaan itu tampil sebagai "sehat".
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/health'`.
 
-- [ ] **Step 3: Tulis pabrik klien**
+- [x] **Step 3: Tulis pabrik klien**
 
 Buat `src/lib/supabase.ts`:
 
@@ -378,7 +378,7 @@ export function buatKlienSupabase(): SupabaseClient {
 
 Gagal keras saat variabelnya kosong itu disengaja. Kalau dibiarkan lewat, kegagalannya baru muncul sebagai error jaringan yang membingungkan jauh di dalam aplikasi.
 
-- [ ] **Step 4: Tulis implementasi minimal pemeriksa kesehatan**
+- [x] **Step 4: Tulis implementasi minimal pemeriksa kesehatan**
 
 Buat `src/lib/health.ts`:
 
@@ -410,12 +410,12 @@ export async function cekKesehatan(
 }
 ```
 
-- [ ] **Step 5: Jalankan uji dan pastikan lulus**
+- [x] **Step 5: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — 2 berkas uji, 4 uji.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib
@@ -435,7 +435,7 @@ git commit -m "feat: klien Supabase dan pemeriksa kesehatan"
 - Consumes: `buatKlienSupabase`, `cekKesehatan`, `HasilKesehatan` dari Task 3; fungsi `sentuh_kesehatan` dari Task 2
 - Produces: `GET /api/health` mengembalikan JSON `HasilKesehatan` dengan status 200 saat sehat dan 503 saat tidak; `GET /api/keep-alive` mengembalikan `{ ok: boolean }`
 
-- [ ] **Step 1: Buat route pembaca kesehatan**
+- [x] **Step 1: Buat route pembaca kesehatan**
 
 Buat `src/app/api/health/route.ts`:
 
@@ -457,7 +457,7 @@ export async function GET() {
 }
 ```
 
-- [ ] **Step 2: Buat route penulis untuk cron**
+- [x] **Step 2: Buat route penulis untuk cron**
 
 Buat `src/app/api/keep-alive/route.ts`:
 
@@ -485,7 +485,7 @@ export async function GET() {
 
 Route ini **menulis**, bukan membaca. Supabase menghitung perubahan data sebagai aktivitas; permintaan baca saja belum tentu menahan project dari dipause. Ini alasan `/api/health` dan `/api/keep-alive` sengaja dipisah alih-alih dijadikan satu.
 
-- [ ] **Step 3: Ganti halaman depan dengan tombol uji**
+- [x] **Step 3: Ganti halaman depan dengan tombol uji**
 
 Ganti seluruh isi `src/app/page.tsx`:
 
@@ -564,12 +564,12 @@ Kalau merah dan berbunyi "wajib diisi", `.env.local` belum terbaca — hentikan 
 Buka `http://localhost:3000/api/keep-alive` di browser.
 Expected: JSON `{"ok":true,"disentuhPada":"…"}` dengan waktu yang **lebih baru** dari yang muncul di Step 4. Tekan tombol uji koneksi lagi untuk memastikan waktunya memang bergerak.
 
-- [ ] **Step 6: Pastikan uji otomatis masih lulus**
+- [x] **Step 6: Pastikan uji otomatis masih lulus**
 
 Run: `pnpm test`
 Expected: LULUS — 2 berkas uji, 4 uji.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/app
@@ -587,7 +587,7 @@ git commit -m "feat: route health dan keep-alive, halaman uji koneksi"
 - Consumes: `GET /api/keep-alive` dari Task 4
 - Produces: URL publik `https://<nama>.vercel.app` yang bisa dibuka dari HP
 
-- [ ] **Step 1: Tulis jadwal cron**
+- [x] **Step 1: Tulis jadwal cron**
 
 Buat `vercel.json`:
 
@@ -604,7 +604,7 @@ Buat `vercel.json`:
 
 Paket Hobby membatasi cron ke sekali sehari, dan sekali sehari sudah jauh lebih rapat dari ambang pause Supabase yang 7 hari. `0 3 * * *` berarti pukul 03.00 UTC, yaitu 10.00 WIB — sengaja di jam yang tidak bertabrakan dengan waktu fellowship.
 
-- [ ] **Step 2: Commit sebelum deploy**
+- [x] **Step 2: Commit sebelum deploy**
 
 ```bash
 git add vercel.json
@@ -655,6 +655,31 @@ git commit -m "chore: tautkan project ke Vercel"
 Kalau `.vercel` sudah masuk `.gitignore` bawaan, lewati saja — memang tidak perlu dilacak.
 
 ---
+
+---
+
+## Status: berhenti di depan prasyarat manual — 2026-08-28
+
+Semua yang bisa dikerjakan tanpa akun Supabase dan Vercel sudah selesai dan ter-commit. Lima commit, `pnpm test` lulus 4 uji, `pnpm build` lulus, `pnpm lint` dan `tsc --noEmit` bersih.
+
+**Sudah terbukti jalan tanpa kredensial.** Server produksi dijalankan lokal lalu ketiga permukaannya diketuk:
+
+| Permukaan | Hasil |
+|---|---|
+| `GET /` | 200, merender judul dan tombol `min-h-[44px]` |
+| `GET /api/health` | 503 `{"sehat":false,"alasan":"NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi"}` |
+| `GET /api/keep-alive` | 503, pesan sama |
+
+Dua 503 itu bukan kegagalan, melainkan jalur gagal-keras dari Task 3 Step 3 yang bekerja persis seperti rancangannya: menyebut nama variabel yang kurang, bukan galat jaringan yang membingungkan. Begitu `.env.local` diisi, keduanya berbalik jadi 200 tanpa perubahan kode.
+
+**Yang masih tertahan, berikut pemicunya.** Semuanya menunggu prasyarat P1–P4, tidak ada yang menunggu kode:
+
+- **Task 2 Step 2–4** — terapkan `supabase/migrations/0001_app_health.sql` lewat SQL Editor, lalu verifikasi barisnya ada dan `sentuh_kesehatan()` memajukan waktunya. Butuh P1–P2.
+- **Task 1 Step 8** — isi dua nilai kosong di `.env.local` dari Settings → API. Butuh P3.
+- **Task 4 Step 4–5** — uji tombol di `pnpm dev` dan pastikan `/api/keep-alive` memajukan waktunya. Butuh dua butir di atas.
+- **Task 5 Step 3–9** — login, link, daftarkan env, deploy, uji dari HP, verifikasi cron terdaftar. Butuh P4.
+
+Urutannya mengikat: P1–P3 dan Task 2 harus lebih dulu, karena deploy yang env-nya belum benar hanya memindahkan galat yang sama ke internet.
 
 ## Definisi Selesai Potongan 1
 
