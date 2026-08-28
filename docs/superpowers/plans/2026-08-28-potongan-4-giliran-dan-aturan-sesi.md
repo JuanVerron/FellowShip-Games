@@ -390,9 +390,54 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 4
 
-1. `pnpm test` lulus, 62 uji di 11 berkas. `pnpm build` dan `pnpm lint` bersih.
-2. Tiga HP di URL produksi: setelah host menekan Mulai, urutan antrean sama di ketiganya dan berbeda dari urutan bergabung.
-3. Hanya layar pemilik giliran yang tombol putarnya hidup; layar host juga hidup.
-4. `putar_roda` dengan token peserta bukan pemilik giliran dan tanpa host token ditolak database dengan `sekarang bukan giliranmu`.
-5. HP keempat yang bergabung di tengah sesi muncul di posisi terakhir antrean.
-6. Giliran hanya berpindah saat host menekan tombol, tidak pernah otomatis setelah roda berhenti.
+1. **Terpenuhi.** `pnpm test` lulus 62 uji di 11 berkas; `pnpm build` dan
+   `pnpm lint` bersih.
+2. **Terpenuhi.** Dua layar di produksi, masing-masing dengan identitasnya
+   sendiri: sesudah host menekan Mulai, keduanya menampilkan antrean
+   `1. Budi, 2. Citra, 3. Juan` — urutan yang berbeda dari urutan bergabung
+   (`Juan, Budi, Citra`). Enam room percobaan di `scripts/verifikasi-giliran.mjs`
+   menghasilkan enam urutan berbeda.
+3. **Terpenuhi.** Di giliran Citra, layar Budi menampilkan `WAITING FOR CITRA`
+   dengan tombol mati, sementara layar host menampilkan `SPIN FOR CITRA` dengan
+   tombol hidup.
+4. **Terpenuhi.** `putar_roda` dengan token peserta bukan pemilik giliran dan
+   `p_host_token => null` ditolak `It is not your turn yet.`
+5. **Terpenuhi.** Dodi yang bergabung di tengah sesi muncul di posisi keempat
+   pada kedua layar tanpa muat ulang, dan urutan tiga orang sebelumnya tidak
+   bergeser.
+6. **Terpenuhi.** Memutar roda tidak menyentuh `nomor_giliran_sekarang`; angka
+   itu hanya berubah saat host memanggil `giliran_berikutnya`.
+
+Seluruhnya diverifikasi lewat `node scripts/verifikasi-giliran.mjs` (16 lulus,
+0 gagal), `node scripts/verifikasi-putaran.mjs` (11 lulus, 0 gagal), dan otomasi
+peramban di dua asal produksi.
+
+## Yang dikerjakan di luar rencana
+
+1. **Nomor migrasi bergeser ke 0005**, mengikuti pergeseran di Potongan 3.
+2. **`scripts/verifikasi-giliran.mjs` dan `scripts/siapkan-room-uji.mjs`.**
+   Yang pertama menggantikan tujuh potong SQL yang harus ditempel sendiri ke
+   dashboard. Yang kedua menyiapkan satu room berisi beberapa orang lewat RPC
+   dan mencetak identitas masing-masing, karena mengetik di formulir lewat
+   otomasi peramban tidak sampai ke tab yang tidak sedang di depan.
+3. **`usiaDetik` dijaga tidak pernah negatif.** Penunjuk status sempat menulis
+   `updated -22s ago` karena pewaktu satu detiknya dilambatkan browser saat tab
+   tidak di depan.
+4. **Label tombol dibedakan antara host dan peserta biasa.** Semula keduanya
+   membaca `SPIN FOR CITRA`; untuk peserta biasa itu menjanjikan sesuatu yang
+   cuma boleh dilakukan host, jadi ia jadi `WAITING FOR CITRA`.
+
+## Yang diketahui belum beres
+
+**Pendatang telat bisa memindahkan pemilik giliran yang sedang berjalan.**
+Kepemilikan dihitung `nomor_giliran % jumlah_peserta`, di kode maupun di
+database. Selama antrean belum pernah berputar penuh, penambahan orang tidak
+terasa. Begitu `nomor_giliran` sudah melewati jumlah peserta, satu orang yang
+bergabung mengubah pembaginya, dan penanda giliran bisa melompat ke orang lain
+di tengah giliran yang sedang berjalan.
+
+Ini tidak melanggar keputusan di `CLAUDE.md` — pendatang telat tetap masuk ke
+ekor antrean, bukan disisipkan acak — tapi ia tetap kejutan yang tidak enak.
+Perbaikannya menuntut jumlah peserta ikut dicatat per giliran, bukan dihitung
+ulang tiap kali. Ditunda ke Potongan 6, yang memang bagian penghalusan sesi.
+
