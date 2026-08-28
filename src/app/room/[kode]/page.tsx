@@ -100,19 +100,23 @@ export default function RuangTunggu({
                 aria-current={iniKamu ? 'true' : undefined}
                 className={
                   iniKamu
-                    ? 'flex min-h-[44px] items-center justify-between rounded-lg border-2 border-black bg-black/5 px-3 font-semibold dark:border-white dark:bg-white/10'
+                    ? 'flex min-h-[44px] items-center justify-between rounded-lg border-2 border-blue-600 bg-blue-600/10 px-3 font-semibold dark:border-blue-400 dark:bg-blue-400/10'
                     : 'flex min-h-[44px] items-center justify-between rounded-lg border px-3'
                 }
               >
                 <span>{orang.nama}</span>
+                {/* 'You' ditaruh paling akhir supaya dialah yang mentok ke tepi
+                    kanan. Sebelumnya 'host' yang di ujung dan pilnya terdorong
+                    ke tengah, sehingga penanda terpenting justru paling tidak
+                    menonjol. */}
                 <span className="flex shrink-0 items-center gap-2">
-                  {iniKamu && (
-                    <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white dark:bg-white dark:text-black">
-                      kamu
-                    </span>
-                  )}
                   {orang.adalahHost && (
                     <span className="text-xs font-normal opacity-60">host</span>
+                  )}
+                  {iniKamu && (
+                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white dark:bg-blue-400 dark:text-black">
+                      You
+                    </span>
                   )}
                 </span>
               </li>
