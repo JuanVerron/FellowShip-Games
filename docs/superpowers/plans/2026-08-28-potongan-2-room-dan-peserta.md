@@ -330,7 +330,7 @@ git commit -m "feat: skema room, peserta, dan fungsi buat/masuk room"
   - `rapikanNama(masukan: string): string`
   - `namaValid(nama: string): boolean`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/kode.test.ts`:
 
@@ -395,12 +395,12 @@ describe('namaValid', () => {
 })
 ```
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/kode'`.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/kode.ts`:
 
@@ -436,14 +436,14 @@ export function namaValid(nama: string): boolean {
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — 6 berkas uji, 26 uji.
 
 Hitungan di rencana ini semula lebih rendah (4 berkas, 14 uji) karena ditulis dengan asumsi Potongan 1 berakhir di 2 berkas/4 uji. Perbaikan keamanan di akhir Potongan 1 menambahkan `cron.test.ts` dan `tanggapan.test.ts` — 2 berkas dan 12 uji. Semua angka harapan di potongan ini sudah digeser sebesar itu.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/kode.ts src/lib/nama.ts src/lib/__tests__
@@ -468,7 +468,7 @@ git commit -m "feat: normalisasi dan validasi kode room serta nama peserta"
 
 `hostToken` bernilai `null` untuk peserta biasa. Ini yang membedakan host dari peserta di seluruh aplikasi — bukan penanda boolean yang gampang dipalsukan dari konsol browser.
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/identitas.test.ts`:
 
@@ -535,12 +535,12 @@ describe('identitas', () => {
 
 Uji "isinya rusak" ada karena kasusnya nyata: bentuk `Identitas` akan berubah di potongan berikutnya, dan data lama yang tersimpan di HP orang harus gagal dengan lembut — dianggap belum pernah masuk — bukan membuat halaman blank.
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/identitas'`.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/identitas.ts`:
 
@@ -621,12 +621,12 @@ export function hapusIdentitas(
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — 7 berkas uji, 30 uji.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/identitas.ts src/lib/__tests__/identitas.test.ts
@@ -652,7 +652,7 @@ git commit -m "feat: penyimpanan identitas peserta per room di browser"
   - `ambilPeserta(roomId: string): Promise<Peserta[]>`
   - `useRoom(kode: string): { room: Room | null; peserta: Peserta[]; memuat: boolean; galat: string | null }`
 
-- [ ] **Step 1: Tulis pembungkus RPC**
+- [x] **Step 1: Tulis pembungkus RPC**
 
 Buat `src/lib/room.ts`:
 
@@ -788,7 +788,7 @@ export async function ambilPeserta(roomId: string): Promise<Peserta[]> {
 }
 ```
 
-- [ ] **Step 2: Tulis uji untuk penerjemah baris**
+- [x] **Step 2: Tulis uji untuk penerjemah baris**
 
 Buat `src/lib/__tests__/room.test.ts`:
 
@@ -827,12 +827,12 @@ describe('kePeserta', () => {
 })
 ```
 
-- [ ] **Step 3: Jalankan uji dan pastikan lulus**
+- [x] **Step 3: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — 8 berkas uji, 32 uji.
 
-- [ ] **Step 4: Tulis hook Realtime**
+- [x] **Step 4: Tulis hook Realtime**
 
 Buat `src/hooks/useRoom.ts`:
 
@@ -895,7 +895,7 @@ export function useRoom(kode: string) {
 
 Setiap perubahan memicu muat ulang penuh, bukan penambalan keadaan setempat. Untuk room berisi belasan orang biayanya sepele, dan imbalannya besar: tidak ada kelas bug "layar saya beda sendiri" yang muncul saat siaran terlewat.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/room.ts src/lib/__tests__/room.test.ts src/hooks/useRoom.ts
@@ -916,7 +916,7 @@ git commit -m "feat: pembungkus RPC room dan langganan Realtime"
 - Consumes: `buatRoom`, `masukRoom`, `useRoom` (Task 4); `normalisasiKode`, `kodeValid` (Task 2); `namaValid`, `rapikanNama` (Task 2); `simpanIdentitas`, `bacaIdentitas` (Task 3)
 - Produces: rute `/`, `/buat`, `/masuk`, `/room/[kode]`
 
-- [ ] **Step 1: Ganti halaman depan**
+- [x] **Step 1: Ganti halaman depan**
 
 Ganti seluruh isi `src/app/page.tsx`:
 
@@ -950,7 +950,7 @@ export default function Beranda() {
 }
 ```
 
-- [ ] **Step 2: Buat layar buat room**
+- [x] **Step 2: Buat layar buat room**
 
 Buat `src/app/buat/page.tsx`:
 
@@ -1020,7 +1020,7 @@ export default function BuatRoom() {
 }
 ```
 
-- [ ] **Step 3: Buat layar masuk room**
+- [x] **Step 3: Buat layar masuk room**
 
 Buat `src/app/masuk/page.tsx`:
 
@@ -1107,7 +1107,7 @@ export default function MasukRoom() {
 }
 ```
 
-- [ ] **Step 4: Buat ruang tunggu**
+- [x] **Step 4: Buat ruang tunggu**
 
 Buat `src/app/room/[kode]/page.tsx`:
 
@@ -1185,7 +1185,7 @@ Kalau tidak muncul: buka konsol browser dan cari galat langganan. Penyebab palin
 Di jendela penyamaran kedua, masuk ke kode yang sama dengan nama "Budi".
 Expected: pesan merah `nama sudah dipakai di room ini`, dan tidak berpindah halaman.
 
-- [ ] **Step 7: Pastikan uji otomatis masih lulus dan build bersih**
+- [x] **Step 7: Pastikan uji otomatis masih lulus dan build bersih**
 
 Run: `pnpm test && pnpm build`
 Expected: uji LULUS, build tanpa galat TypeScript.
