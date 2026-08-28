@@ -295,7 +295,7 @@ select * from public.masuk_room('KODE_DARI_STEP_3', 'Budi');
 
 Expected: panggilan pertama berhasil, panggilan kedua gagal dengan `nama sudah dipakai di room ini`.
 
-- [ ] **Step 5: Verifikasi rahasia tidak bocor ke anon**
+- [x] **Step 5: Verifikasi rahasia tidak bocor ke anon**
 
 ```sql
 set role anon;
@@ -305,7 +305,7 @@ reset role;
 
 Expected: nol baris. Kalau ada baris yang keluar, RLS belum aktif — jangan lanjut sebelum ini nol.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/migrations/0002_room_dan_peserta.sql
@@ -439,7 +439,9 @@ export function namaValid(nama: string): boolean {
 - [ ] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 4 berkas uji, 14 uji.
+Expected: LULUS — 6 berkas uji, 26 uji.
+
+Hitungan di rencana ini semula lebih rendah (4 berkas, 14 uji) karena ditulis dengan asumsi Potongan 1 berakhir di 2 berkas/4 uji. Perbaikan keamanan di akhir Potongan 1 menambahkan `cron.test.ts` dan `tanggapan.test.ts` — 2 berkas dan 12 uji. Semua angka harapan di potongan ini sudah digeser sebesar itu.
 
 - [ ] **Step 5: Commit**
 
@@ -622,7 +624,7 @@ export function hapusIdentitas(
 - [ ] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 5 berkas uji, 18 uji.
+Expected: LULUS — 7 berkas uji, 30 uji.
 
 - [ ] **Step 5: Commit**
 
@@ -828,7 +830,7 @@ describe('kePeserta', () => {
 - [ ] **Step 3: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 6 berkas uji, 20 uji.
+Expected: LULUS — 8 berkas uji, 32 uji.
 
 - [ ] **Step 4: Tulis hook Realtime**
 
@@ -1205,7 +1207,7 @@ Expected: nama peserta kedua muncul di HP pertama tanpa disentuh.
 
 ## Definisi Selesai Potongan 2
 
-1. `pnpm test` lulus, 20 uji.
+1. `pnpm test` lulus, 32 uji.
 2. `pnpm build` bersih.
 3. Dua HP berbeda di URL produksi: buat room di satu, masuk dari satu lagi, nama muncul otomatis di layar pertama.
 4. Nama kembar ditolak dengan pesan yang bisa dibaca orang, bukan layar error.
