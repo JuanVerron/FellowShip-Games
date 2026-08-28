@@ -46,3 +46,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# berkas kerja Supabase CLI, bukan milik project
+supabase/.temp/
