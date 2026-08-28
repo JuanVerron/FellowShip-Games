@@ -1,7 +1,8 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useRoom } from '@/hooks/useRoom'
+import { bacaIdentitas, kunciIdentitas } from '@/lib/identitas'
 
 const WARNA_STATUS = {
   tersambung: 'bg-green-500',
@@ -12,8 +13,16 @@ const WARNA_STATUS = {
 const TEKS_STATUS = {
   tersambung: 'Tersambung langsung',
   menyambung: 'Menyambung…',
-  terputus: 'Terputus — tarik layar ke bawah untuk memuat ulang',
+  terputus: 'Terputus — muat ulang halaman',
 } as const
+
+// Penyimpanan browser hanya menyiarkan peristiwa 'storage' ke tab lain, bukan
+// ke tab yang mengubahnya. Itu sudah cukup di sini: identitas hanya berubah
+// saat masuk room, dan saat itu halamannya memang dimuat ulang.
+function langgananPenyimpanan(beriTahu: () => void): () => void {
+  window.addEventListener('storage', beriTahu)
+  return () => window.removeEventListener('storage', beriTahu)
+}
 
 function usiaDetik(sejak: number | null, sekarang: number): number | null {
   return sejak === null ? null : Math.floor((sekarang - sejak) / 1000)
@@ -25,12 +34,33 @@ export default function RuangTunggu({
   params: Promise<{ kode: string }>
 }) {
   const { kode } = use(params)
+  const kodeBesar = kode.toUpperCase()
   const { room, peserta, memuat, galat, statusSaluran, diperbaruiPada } =
-    useRoom(kode.toUpperCase())
+    useRoom(kodeBesar)
 
-  // Penanda usia ini menghitung sendiri tiap detik supaya "diperbarui N detik
-  // lalu" tetap jujur walau tidak ada siaran yang masuk. Kalau angkanya terus
-  // membesar sementara ada orang baru bergabung, sinkronisasinya sedang mati.
+  // Identitas hidup di localStorage, yang tidak ada saat halaman dirender di
+  // server. useSyncExternalStore memang dibuat untuk ini: render di server
+  // memakai getServerSnapshot yang mengembalikan null, browser membaca nilai
+  // sebenarnya, dan React menjahit keduanya tanpa hidrasi yang pecah.
+  // Yang dibaca sengaja teks mentahnya, bukan objek hasil parse, karena
+  // snapshot wajib stabil antar panggilan - objek baru tiap kali akan
+  // membuat React merender tanpa henti.
+  const identitasMentah = useSyncExternalStore(
+    langgananPenyimpanan,
+    () => {
+      try {
+        return window.localStorage.getItem(kunciIdentitas(kodeBesar))
+      } catch {
+        return null
+      }
+    },
+    () => null,
+  )
+  const identitas = useMemo(
+    () => (identitasMentah ? bacaIdentitas(kodeBesar) : null),
+    [identitasMentah, kodeBesar],
+  )
+
   const [sekarang, setSekarang] = useState(() => Date.now())
   useEffect(() => {
     const pewaktu = setInterval(() => setSekarang(Date.now()), 1000)
@@ -62,22 +92,36 @@ export default function RuangTunggu({
       <div>
         <h2 className="mb-3 font-semibold">Peserta ({peserta.length})</h2>
         <ul className="flex flex-col gap-2">
-          {peserta.map((orang) => (
-            <li
-              key={orang.id}
-              className="flex min-h-[44px] items-center justify-between rounded-lg border px-3"
-            >
-              <span>{orang.nama}</span>
-              {orang.adalahHost && <span className="text-xs opacity-60">host</span>}
-            </li>
-          ))}
+          {peserta.map((orang) => {
+            const iniKamu = identitas?.participantId === orang.id
+            return (
+              <li
+                key={orang.id}
+                aria-current={iniKamu ? 'true' : undefined}
+                className={
+                  iniKamu
+                    ? 'flex min-h-[44px] items-center justify-between rounded-lg border-2 border-black bg-black/5 px-3 font-semibold dark:border-white dark:bg-white/10'
+                    : 'flex min-h-[44px] items-center justify-between rounded-lg border px-3'
+                }
+              >
+                <span>{orang.nama}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {iniKamu && (
+                    <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white dark:bg-white dark:text-black">
+                      kamu
+                    </span>
+                  )}
+                  {orang.adalahHost && (
+                    <span className="text-xs font-normal opacity-60">host</span>
+                  )}
+                </span>
+              </li>
+            )
+          })}
         </ul>
       </div>
 
-      <p
-        role="status"
-        className="mt-auto flex items-center gap-2 text-xs opacity-70"
-      >
+      <p role="status" className="mt-auto flex items-center gap-2 text-xs opacity-70">
         <span
           className={`inline-block h-2 w-2 shrink-0 rounded-full ${WARNA_STATUS[statusSaluran]}`}
           aria-hidden

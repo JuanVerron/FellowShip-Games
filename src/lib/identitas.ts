@@ -6,7 +6,7 @@ export type Identitas = {
   hostToken: string | null
 }
 
-function kunciUntuk(kode: string): string {
+export function kunciIdentitas(kode: string): string {
   return `fellowship:room:${kode}`
 }
 
@@ -24,7 +24,7 @@ export function simpanIdentitas(
   penyimpanan: Storage | null = penyimpananBawaan(),
 ): void {
   try {
-    penyimpanan?.setItem(kunciUntuk(kode), JSON.stringify(identitas))
+    penyimpanan?.setItem(kunciIdentitas(kode), JSON.stringify(identitas))
   } catch {
     // Mode penyamaran atau penyimpanan penuh. Sesi tetap boleh jalan,
     // cuma tidak bisa dipulihkan setelah halaman dimuat ulang.
@@ -36,7 +36,7 @@ export function bacaIdentitas(
   penyimpanan: Storage | null = penyimpananBawaan(),
 ): Identitas | null {
   try {
-    const mentah = penyimpanan?.getItem(kunciUntuk(kode))
+    const mentah = penyimpanan?.getItem(kunciIdentitas(kode))
     if (!mentah) return null
 
     const isi = JSON.parse(mentah) as Partial<Identitas>
@@ -66,7 +66,7 @@ export function hapusIdentitas(
   penyimpanan: Storage | null = penyimpananBawaan(),
 ): void {
   try {
-    penyimpanan?.removeItem(kunciUntuk(kode))
+    penyimpanan?.removeItem(kunciIdentitas(kode))
   } catch {
     // Sama seperti simpanIdentitas: gagal menyimpan bukan alasan
     // menghentikan sesi.
