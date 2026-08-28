@@ -28,9 +28,11 @@
 
 Task 2 dan seterusnya macet tanpa ini. Kerjakan dulu.
 
-- [ ] **P1.** Bikin akun di [supabase.com](https://supabase.com), login pakai GitHub, buat organization paket **Free**.
-- [ ] **P2.** **New project**: nama `fellowship-games`, region **Southeast Asia (Singapore)**, password database di-*generate* lalu disimpan di tempat aman. Tunggu ~2 menit sampai provisioning selesai.
-- [ ] **P3.** Buka **Settings → API**, salin `Project URL` dan `anon public` key. Dua nilai ini yang dipakai di Task 1 langkah 8.
+- [x] **P1.** Bikin akun di [supabase.com](https://supabase.com), login pakai GitHub, buat organization paket **Free**.
+- [x] **P2.** **New project**: nama `fellowship-games`, region **Southeast Asia (Singapore)**, password database di-*generate* lalu disimpan di tempat aman. Tunggu ~2 menit sampai provisioning selesai.
+- [x] **P3.** Buka **Settings → API Keys**, salin **Publishable key** (berawalan `sb_publishable_`). Untuk `Project URL`, baca `project ref` dari address bar dashboard — URL-nya `https://<project-ref>.supabase.co`; tombol **Connect → App Frameworks** juga menampilkan keduanya sekaligus. Dua nilai ini yang dipakai di Task 1 langkah 8.
+
+  Dashboard sudah berubah dari tebakan rencana ini: menunya bukan lagi "Settings → API", dan project baru mendapat kunci format `sb_publishable_…`. Kunci `anon` JWT lama masih ada tapi dihapus akhir 2026, jadi yang publishable yang dipakai. Keduanya sama-sama memetakan ke peran `anon`, jadi kebijakan RLS dan `grant execute … to anon` di Task 2 tetap berlaku apa adanya.
 - [ ] **P4.** Bikin akun di [vercel.com](https://vercel.com), login pakai GitHub, pilih paket **Hobby**. Jangan isi metode pembayaran.
 
 ---
@@ -255,12 +257,12 @@ grant execute on function public.sentuh_kesehatan() to anon;
 
 Catatan yang perlu dipahami sebelum menerapkan: RLS hanya membuka **baca**. Menulis tidak dibuka ke `anon` sama sekali; satu-satunya jalan menulis adalah lewat fungsi `sentuh_kesehatan` yang berjalan `security definer`. Pola inilah yang dipakai untuk semua penulisan di potongan-potongan berikutnya, jadi pahami sekarang, bukan nanti.
 
-- [ ] **Step 2: Terapkan ke Supabase**
+- [x] **Step 2: Terapkan ke Supabase**
 
 Buka dashboard Supabase → **SQL Editor** → **New query** → tempel seluruh isi berkas → **Run**.
 Expected: `Success. No rows returned`.
 
-- [ ] **Step 3: Verifikasi tabelnya berisi**
+- [x] **Step 3: Verifikasi tabelnya berisi**
 
 Di SQL Editor jalankan:
 
@@ -270,7 +272,7 @@ select * from public.app_health;
 
 Expected: tepat satu baris, `id = 1`, `disentuh_pada` berisi waktu.
 
-- [ ] **Step 4: Verifikasi fungsinya bisa dipanggil**
+- [x] **Step 4: Verifikasi fungsinya bisa dipanggil**
 
 Di SQL Editor jalankan:
 
@@ -560,7 +562,7 @@ export default function Beranda() {
 }
 ```
 
-- [ ] **Step 4: Uji di browser**
+- [x] **Step 4: Uji di browser**
 
 Run: `pnpm dev`
 Buka `http://localhost:3000`, tekan **Uji koneksi database**.
@@ -568,7 +570,7 @@ Expected: teks hijau "Tersambung. Terakhir disentuh …" dengan waktu dari Task 
 
 Kalau merah dan berbunyi "wajib diisi", `.env.local` belum terbaca — hentikan `pnpm dev` dan jalankan ulang, karena Next.js hanya membaca berkas env saat start.
 
-- [ ] **Step 5: Uji route cron secara manual**
+- [x] **Step 5: Uji route cron secara manual**
 
 Route ini terkunci `CRON_SECRET`, jadi tidak bisa lagi dibuka lewat browser — browser tidak mengirim header `Authorization`. Pakai curl:
 
@@ -697,34 +699,24 @@ Kalau `.vercel` sudah masuk `.gitignore` bawaan, lewati saja — memang tidak pe
 
 ---
 
-## Status: berhenti di depan prasyarat manual — 2026-08-28
+## Status: tersambung hidup, tinggal deploy — 2026-08-28
 
-Semua yang bisa dikerjakan tanpa akun Supabase dan Vercel sudah selesai dan ter-commit. Lima commit, `pnpm test` lulus 4 uji, `pnpm build` lulus, `pnpm lint` dan `tsc --noEmit` bersih.
+Supabase sudah berdiri dan aplikasinya benar-benar bicara ke database. Task 1 sampai Task 4 tuntas dan terverifikasi. Yang tersisa hanya Task 5 Step 3–9, menunggu prasyarat **P4** (akun Vercel).
 
-**Sudah terbukti jalan tanpa kredensial.** Server produksi dijalankan lokal lalu ketiga permukaannya diketuk:
+**Bukti sambungan hidup**, diambil berurutan dari build produksi lokal:
 
-| Permukaan | Hasil |
+| Uji | Hasil |
 |---|---|
-| `GET /` | 200, merender judul dan tombol `min-h-[44px]` |
-| `GET /api/health` | 503, alasan "…wajib diisi" |
-| `GET /api/keep-alive` tanpa header | **401** `{"ok":false}`, tanpa alasan |
-| `GET /api/keep-alive` `Bearer` salah | **401** |
-| `GET /api/keep-alive` `Bearer undefined` | **401** |
-| `GET /api/keep-alive` rahasia benar tanpa awalan `Bearer` | **401** |
-| `GET /api/keep-alive` `Bearer` benar | lolos kunci, lalu 503 di dinding env |
+| `GET /api/health` | 200 `{"sehat":true,"disentuhPada":"2026-08-28T10:31:21Z"}` |
+| `GET /api/keep-alive` + `Bearer` benar | 200, menulis waktu baru `10:36:10` |
+| `GET /api/health` lagi | 200, menampilkan `10:36:10` — waktunya maju |
+| `GET /api/keep-alive` tanpa header | 401 `{"ok":false}` |
 
-503 di atas bukan kegagalan, melainkan jalur gagal-keras dari Task 3 Step 3 yang bekerja persis seperti rancangannya: menyebut nama variabel yang kurang, bukan galat jaringan yang membingungkan. Begitu `.env.local` diisi, keduanya berbalik jadi 200 tanpa perubahan kode.
+Uji ketiga yang menentukan: waktunya bergerak, jadi route cron benar-benar **menulis**, bukan sekadar membaca. Itu yang menahan project Supabase dari dipause. Uji keempat membuktikan kuncinya tetap menolak yang tak berwenang.
 
-Penyaring alasan juga diuji ujung-ke-ujung dengan build produksi yang kredensialnya sengaja diarahkan ke host yang tidak ada. Klien menerima `"Ada yang salah di sisi server. Coba lagi sebentar lagi."`, sementara `TypeError: fetch failed` yang sebenarnya hanya muncul di log server.
+Verifikasi Task 2 Step 3–4 ditempuh lewat jalur ini, bukan lewat SQL Editor. Hasilnya lebih kuat, bukan lebih longgar: satu perjalanan penuh dari route handler → PostgREST → RLS → fungsi `security definer` → kembali, yang sekaligus membuktikan kunci publishable memang memetakan ke peran `anon` seperti yang diasumsikan migrasi.
 
-**Yang masih tertahan, berikut pemicunya.** Semuanya menunggu prasyarat P1–P4, tidak ada yang menunggu kode:
-
-- **Task 2 Step 2–4** — terapkan `supabase/migrations/0001_app_health.sql` lewat SQL Editor, lalu verifikasi barisnya ada dan `sentuh_kesehatan()` memajukan waktunya. Butuh P1–P2.
-- **Task 1 Step 8** — isi dua nilai kosong di `.env.local` dari Settings → API. Butuh P3.
-- **Task 4 Step 4–5** — uji tombol di `pnpm dev` dan pastikan `/api/keep-alive` memajukan waktunya. Butuh dua butir di atas.
-- **Task 5 Step 3–9** — login, link, daftarkan env, deploy, uji dari HP, verifikasi cron terdaftar. Butuh P4.
-
-Urutannya mengikat: P1–P3 dan Task 2 harus lebih dulu, karena deploy yang env-nya belum benar hanya memindahkan galat yang sama ke internet.
+**Yang tersisa:** P4 (akun Vercel Hobby, tanpa metode pembayaran), lalu Task 5 Step 3–9. Ingat `CRON_SECRET` di Step 5 — kalau lupa didaftarkan, cron berjalan tapi selalu dijawab 401 dan Supabase pelan-pelan menuju pause tanpa tanda apa pun.
 
 ## Definisi Selesai Potongan 1
 
