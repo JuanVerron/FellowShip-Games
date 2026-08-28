@@ -19,7 +19,7 @@ Detailnya ada di bagian "Prasyarat Manual" di rencana Potongan 1.
 |---|---|---|---|
 | 1 | `2026-08-28-potongan-1-tulang-punggung-online.md` | URL publik hidup di Vercel, tersambung Supabase, cron anti-pause jalan | [x] |
 | 2 | `2026-08-28-potongan-2-room-dan-peserta.md` | Buat room dapat kode; orang lain masuk; daftar peserta hidup di semua HP | [x] |
-| 3 | `2026-08-28-potongan-3-roda-serentak.md` | Roda berputar dan berhenti di pertanyaan yang sama di semua layar | [ ] |
+| 3 | `2026-08-28-potongan-3-roda-serentak.md` | Roda berputar dan berhenti di pertanyaan yang sama di semua layar | [x] |
 | 4 | `2026-08-28-potongan-4-giliran-dan-aturan-sesi.md` | Urutan diacak, tombol terkunci per giliran, host memindah giliran | [ ] |
 | 5 | `2026-08-28-potongan-5-bank-penuh-dan-pemilihan.md` | Bank 300–450 pertanyaan, accordion pemilihan, opsi room, sesi selesai | [ ] |
 | 6 | `2026-08-28-potongan-6-penghalusan-sesi.md` | Sisipan saat sesi, pemulihan setelah HP terkunci, tampilan HP rapi | [ ] |

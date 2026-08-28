@@ -462,8 +462,40 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 3
 
-1. `pnpm test` lulus, 49 uji, 10 berkas. `pnpm build` dan `pnpm lint` bersih.
-2. Dua HP di URL produksi: satu menekan PUTAR, kedua layar berhenti di segmen yang sama dengan teks pertanyaan identik.
-3. Muat ulang halaman mengembalikan pertanyaan terakhir tanpa perlu memutar lagi.
-4. Dua penekanan hampir bersamaan menghasilkan tepat satu pertanyaan; yang kalah dapat pesan yang bisa dibaca, bukan layar rusak.
-5. `putar_roda` dengan token ngawur ditolak.
+1. **Terpenuhi.** `pnpm test` lulus 49 uji di 10 berkas; `pnpm build` dan
+   `pnpm lint` bersih.
+2. **Terpenuhi.** Dua layar di URL produksi berhenti di sudut yang sama persis
+   — `rotate(1822.5deg)`, lalu `rotate(4927.5deg)` setelah putaran kedua — dan
+   menampilkan teks pertanyaan yang identik. Segmen yang berhenti di bawah
+   penunjuk cocok dengan teks di kotak bawah.
+3. **Terpenuhi.** Muat ulang mengembalikan pertanyaan terakhir dengan sudut
+   yang sama dan `transition-duration` `0s`: layar pulih langsung di posisi
+   akhir, bukan memutar ulang animasinya.
+4. **Terpenuhi.** Nomor giliran yang sudah terpakai ditolak batasan unik
+   `spins_room_id_nomor_giliran_key`, dan yang kalah membaca
+   `Someone else just spun. Here comes their question.` — bukan galat mentah.
+   Tiga penekanan yang dikirim bersamaan lewat PostgREST tidak pernah berbagi
+   nomor giliran.
+5. **Terpenuhi.** `putar_roda` dengan token ngawur ditolak
+   `You are not in this room.`, dan dengan kode room yang tidak ada ditolak
+   `Room not found.`
+
+Seluruhnya diverifikasi ulang lewat `node scripts/verifikasi-putaran.mjs`
+(12 lulus, 0 gagal) dan otomasi peramban di
+`https://fellowship-games-seven.vercel.app`.
+
+## Yang dikerjakan di luar rencana
+
+Empat hal, semuanya karena rencana ini ditulis sebelum ada satu baris kode pun:
+
+1. **Nomor migrasi bergeser ke 0004.** `0003` sudah dipakai migrasi pesan
+   antarmuka Inggris yang lahir di luar rencana Potongan 2.
+2. **`scripts/sql.mjs` dan `scripts/verifikasi-putaran.mjs`.** Rencana
+   menyuruh verifikasi lewat SQL Editor dan dua jendela peramban; keduanya
+   diganti skrip supaya bisa diulang dan tidak bergantung pada mata manusia.
+3. **`sudutKumulatif`.** Roda bisa berputar mundur antar giliran tanpa ini.
+4. **Arah balik label.** Ditemukan dua kali: pertama karena label meleset
+   seperempat lingkaran dari warnanya, lalu karena separuh huruf berdiri
+   terbalik. Yang kedua sempat diperbaiki setengah jalan — dihitung dari sudut
+   segmennya sendiri, yang hanya benar selama roda belum diputar sama sekali.
+
