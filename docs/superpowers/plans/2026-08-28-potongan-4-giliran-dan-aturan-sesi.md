@@ -304,290 +304,85 @@ git commit -m "feat: perhitungan pemilik giliran dan hak memutar"
 - Modify: `src/app/room/[kode]/page.tsx`
 
 **Interfaces:**
-- Consumes: `mulai_sesi`, `giliran_berikutnya`, `putar_roda` versi tiga argumen (Task 1); `pemilikGiliran`, `bolehMemutar` (Task 2)
+- Consumes: `mulai_sesi`, `giliran_berikutnya`, `putar_roda` versi tiga argumen (Task 1); `pemilikGiliran`, `bolehMemutar`, `pesertaTerurut` (Task 2)
 - Produces:
   - `mulaiSesi(kode: string, hostToken: string): Promise<void>`
   - `giliranBerikutnya(kode: string, hostToken: string): Promise<number>`
   - `putarRoda(kode: string, token: string, hostToken: string | null): Promise<Putaran>` — tanda tangan baru
 
-- [ ] **Step 1: Tulis pembungkus kendali sesi**
+- [x] **Step 1: Tulis pembungkus kendali sesi**
 
-Buat `src/lib/sesi.ts`:
+Buat `src/lib/sesi.ts` berisi `mulaiSesi` dan `giliranBerikutnya`.
 
-```typescript
-import { buatKlienSupabase } from '@/lib/supabase'
+- [x] **Step 2: Tambah argumen host pada `putarRoda`**
 
-export async function mulaiSesi(kode: string, hostToken: string): Promise<void> {
-  const { error } = await buatKlienSupabase().rpc('mulai_sesi', {
-    p_kode: kode,
-    p_host_token: hostToken,
-  })
-  if (error) throw new Error(error.message)
-}
+`src/lib/putaran.ts` meneruskan `p_host_token`. Nilainya `null` untuk peserta
+biasa, dan itu memang dikirim — bukan dihilangkan — supaya database yang
+memutuskan, bukan browser.
 
-export async function giliranBerikutnya(
-  kode: string,
-  hostToken: string,
-): Promise<number> {
-  const { data, error } = await buatKlienSupabase().rpc('giliran_berikutnya', {
-    p_kode: kode,
-    p_host_token: hostToken,
-  })
-  if (error) throw new Error(error.message)
-  return data as number
-}
-```
+- [x] **Step 3: Perluas layar room jadi dua keadaan**
 
-- [ ] **Step 2: Tambah argumen host pada `putarRoda`**
+> **Koreksi rencana.** Untuk ketiga kalinya di dua potongan, rencana menyuruh
+> mengganti seluruh isi `src/app/room/[kode]/page.tsx`. Cuplikan penggantinya
+> kehilangan tautan beranda, penanda diri sendiri, pembuangan identitas basi,
+> penunjuk status sambungan, dan pembacaan identitas lewat `useSyncExternalStore`
+> yang menjaga hidrasi tidak pecah. Yang dikerjakan: **memperluas**.
 
-Di `src/lib/putaran.ts`, ganti fungsi `putarRoda`:
+Yang bertambah dibanding Potongan 3:
 
-```typescript
-export async function putarRoda(
-  kode: string,
-  token: string,
-  hostToken: string | null,
-): Promise<Putaran> {
-  const { data, error } = await buatKlienSupabase()
-    .rpc('putar_roda', {
-      p_kode: kode,
-      p_token: token,
-      p_host_token: hostToken,
-    })
-    .single()
+- Dua keadaan: ruang tunggu (`status = 'lobby'`) dan sesi berjalan. Ruang
+  tunggu tidak menampilkan roda sama sekali.
+- Spanduk giliran: `Your turn!` berlatar kuning untuk pemiliknya, atau
+  `<nama>'s turn` berbingkai untuk yang lain.
+- Label tombol ikut menjelaskan siapa yang diwakili. Host yang menekan di
+  giliran orang lain membaca `SPIN FOR BUDI`, bukan `SPIN` polos — kewenangan
+  yang tidak biasa itu jadi terlihat, bukan tersembunyi.
+- `Already spun` saat giliran sekarang sudah punya pertanyaan, dan tombolnya
+  mati. Penolakan di database tetap ada sebagai pengaman; yang di browser cuma
+  supaya orang tidak menekan berulang dan menerima pesan galat sebagai hadiah.
+- `Next turn →` hanya muncul di layar host.
+- Antrean bernomor, yang bukan giliran sekarang diredupkan.
+- Baris peserta dipakai bersama kedua keadaan lewat satu fungsi, supaya penanda
+  `(you)` dan label `host` tidak ditulis dua kali dengan risiko berbeda.
 
-  if (error) throw new Error(error.message)
+Satu perbaikan di luar rencana: `usiaDetik` dijaga tidak pernah negatif.
+Pewaktu satu detik yang menghidupi `sekarang` dilambatkan browser saat tabnya
+tidak di depan, jadi begitu tab kembali dan data ditarik ulang, penunjuk status
+sempat menulis `updated -22s ago`. Terlihat saat uji peramban, bukan saat
+membaca kode.
 
-  const hasil = data as {
-    room_question_id: string
-    teks: string
-    nomor_giliran: number
-    benih_animasi: number
-  }
+- [x] **Step 4: Uji alur di peramban**
 
-  return {
-    roomQuestionId: hasil.room_question_id,
-    teks: hasil.teks,
-    nomorGiliran: hasil.nomor_giliran,
-    benihAnimasi: hasil.benih_animasi,
-  }
-}
-```
+Rencana awal menyuruh membuka empat jendela penyamaran dan menekan tombolnya
+sendiri. Yang dikerjakan: peramban dikemudikan otomatis, dan pemeriksaan yang
+tidak butuh mata dipindahkan ke `scripts/verifikasi-giliran.mjs` (Task 1).
 
-- [ ] **Step 3: Ganti layar room dengan dua keadaan**
+Satu hal perlu diakali. Identitas hidup di `localStorage`, yang dibagi semua
+tab dengan asal yang sama — jadi dua tab pada satu asal selalu jadi orang yang
+sama. Jalan keluarnya memakai dua asal berbeda. `localhost` dan `127.0.0.1`
+gagal: `next dev` tidak menghidrasi halaman yang dibuka dari asal kedua, dan
+layarnya berhenti di `Loading…` selamanya. Yang berhasil adalah dua asal di
+produksi — domain tetap dan URL deployment — karena keduanya sah dan sudah
+terbangun penuh.
 
-Ganti seluruh isi `src/app/room/[kode]/page.tsx`:
+Hasil di layar host (`localhost`, sesi dimulai dari ruang tunggu):
 
-```tsx
-'use client'
+| Yang diperiksa | Hasil |
+|---|---|
+| Ruang tunggu tidak menampilkan roda | benar |
+| Peserta kedua muncul lewat Realtime | `Participants (2)` tanpa muat ulang |
+| Mulai Sesi memindahkan layar ke sesi | spanduk `Budi's turn` |
+| Urutan antrean sama di layar itu | `1. Budi, 2. Juan` |
+| Host melihat kewenangannya | tombol `SPIN FOR BUDI`, hidup |
+| `Next turn →` memindah giliran | spanduk jadi `Your turn!`, tombol jadi `SPIN` |
+| Memutar mengisi pertanyaan | `QUESTION #2 — When did you last laugh until it hurt?` |
+| Giliran yang sudah diputar terkunci | tombol `Already spun`, `disabled` |
 
-import { use, useEffect, useState } from 'react'
-import { Roda } from '@/components/Roda'
-import { useRoom } from '@/hooks/useRoom'
-import { bolehMemutar, pemilikGiliran, pesertaTerurut } from '@/lib/giliran'
-import { bacaIdentitas, type Identitas } from '@/lib/identitas'
-import { putarRoda } from '@/lib/putaran'
-import { giliranBerikutnya, mulaiSesi } from '@/lib/sesi'
-
-export default function HalamanRoom({
-  params,
-}: {
-  params: Promise<{ kode: string }>
-}) {
-  const { kode: kodeMentah } = use(params)
-  const kode = kodeMentah.toUpperCase()
-  const { room, peserta, kolam, putaran, memuat, galat } = useRoom(kode)
-  const [identitas, setIdentitas] = useState<Identitas | null>(null)
-  const [sibuk, setSibuk] = useState(false)
-  const [pesanGalat, setPesanGalat] = useState<string | null>(null)
-
-  useEffect(() => {
-    setIdentitas(bacaIdentitas(kode))
-  }, [kode])
-
-  const adalahHost = identitas?.hostToken != null
-
-  async function jalankan(tugas: () => Promise<unknown>) {
-    setSibuk(true)
-    setPesanGalat(null)
-    try {
-      await tugas()
-    } catch (e) {
-      setPesanGalat(e instanceof Error ? e.message : 'Gagal')
-    } finally {
-      setSibuk(false)
-    }
-  }
-
-  if (memuat) return <main className="p-6">Memuat…</main>
-
-  if (galat || !room) {
-    return (
-      <main className="mx-auto max-w-md p-6">
-        <p className="text-red-600">{galat ?? 'Room tidak ditemukan'}</p>
-      </main>
-    )
-  }
-
-  // ——— Ruang tunggu ———
-  if (room.status === 'lobby') {
-    return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-8 p-6">
-        <div className="text-center">
-          <p className="text-sm opacity-70">Kode room</p>
-          <p className="font-mono text-5xl font-bold tracking-[0.3em]">{room.kode}</p>
-          <p className="mt-2 text-sm opacity-70">Sebutkan kode ini ke teman-teman</p>
-        </div>
-
-        <div>
-          <h2 className="mb-3 font-semibold">Peserta ({peserta.length})</h2>
-          <ul className="flex flex-col gap-2">
-            {peserta.map((orang) => (
-              <li
-                key={orang.id}
-                className="flex min-h-[44px] items-center justify-between rounded-lg border px-3"
-              >
-                <span>{orang.nama}</span>
-                {orang.adalahHost && <span className="text-xs opacity-60">host</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {pesanGalat && <p className="text-sm text-red-600">{pesanGalat}</p>}
-
-        {adalahHost ? (
-          <button
-            type="button"
-            disabled={sibuk}
-            onClick={() => jalankan(() => mulaiSesi(kode, identitas!.hostToken!))}
-            className="min-h-[56px] rounded-xl bg-black text-lg font-bold text-white disabled:opacity-40 dark:bg-white dark:text-black"
-          >
-            {sibuk ? 'Memulai…' : 'Mulai Sesi'}
-          </button>
-        ) : (
-          <p className="text-center text-sm opacity-70">Menunggu host memulai sesi…</p>
-        )}
-      </main>
-    )
-  }
-
-  // ——— Sesi berjalan ———
-  const pemilik = pemilikGiliran(peserta, room.nomorGiliranSekarang)
-  const giliranku = pemilik?.id === identitas?.participantId
-  const bolehTekan = bolehMemutar({
-    participantId: identitas?.participantId ?? null,
-    adalahHost,
-    pemilik,
-  })
-  const indeksTerpilih = putaran
-    ? kolam.findIndex((p) => p.id === putaran.roomQuestionId)
-    : -1
-  const putaranIniSudahAda = putaran?.nomorGiliran === room.nomorGiliranSekarang
-
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 p-6">
-      <div
-        className={`rounded-2xl p-4 text-center ${
-          giliranku ? 'bg-black text-white dark:bg-white dark:text-black' : 'border-2'
-        }`}
-      >
-        {giliranku ? (
-          <p className="text-2xl font-bold">Giliranmu!</p>
-        ) : (
-          <p className="text-lg">
-            Giliran <span className="font-bold">{pemilik?.nama ?? '—'}</span>
-          </p>
-        )}
-      </div>
-
-      <Roda
-        daftar={kolam.map((p) => p.teks)}
-        indeksTerpilih={indeksTerpilih >= 0 ? indeksTerpilih : null}
-        benih={putaran?.benihAnimasi ?? 0}
-      />
-
-      <button
-        type="button"
-        disabled={sibuk || !bolehTekan || putaranIniSudahAda}
-        onClick={() =>
-          jalankan(() =>
-            putarRoda(kode, identitas!.token, identitas?.hostToken ?? null),
-          )
-        }
-        className="min-h-[64px] rounded-2xl bg-black text-xl font-bold text-white disabled:opacity-40 dark:bg-white dark:text-black"
-      >
-        {putaranIniSudahAda ? 'Sudah diputar' : sibuk ? 'Memutar…' : 'PUTAR'}
-      </button>
-
-      {pesanGalat && <p className="text-center text-sm text-red-600">{pesanGalat}</p>}
-
-      {putaran && (
-        <div className="rounded-2xl border-2 p-5">
-          <p className="text-2xl font-semibold leading-snug">{putaran.teks}</p>
-        </div>
-      )}
-
-      {adalahHost && (
-        <button
-          type="button"
-          disabled={sibuk}
-          onClick={() => jalankan(() => giliranBerikutnya(kode, identitas!.hostToken!))}
-          className="min-h-[52px] rounded-xl border-2 font-semibold disabled:opacity-40"
-        >
-          Giliran berikutnya →
-        </button>
-      )}
-
-      <div>
-        <h2 className="mb-2 text-sm font-semibold opacity-70">Antrean</h2>
-        <ol className="flex flex-wrap gap-2">
-          {pesertaTerurut(peserta).map((orang, i) => (
-            <li
-              key={orang.id}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                orang.id === pemilik?.id ? 'border-black font-bold dark:border-white' : 'opacity-60'
-              }`}
-            >
-              {i + 1}. {orang.nama}
-            </li>
-          ))}
-        </ol>
-      </div>
-    </main>
-  )
-}
-```
-
-Tombol putar mati saat `putaranIniSudahAda` supaya orang tidak menekan berulang dan menerima pesan galat dari database sebagai hadiahnya. Penolakan di database tetap ada sebagai pengaman; yang di browser cuma supaya sopan.
-
-- [ ] **Step 4: Uji tiga peramban**
-
-Run: `pnpm dev`
-
-1. Jendela A: Buat Room sebagai "Juan".
-2. Jendela penyamaran B: masuk sebagai "Budi". Jendela penyamaran lain C: masuk sebagai "Citra".
-3. Di A tekan **Mulai Sesi**.
-
-Expected: ketiga layar berpindah ke tampilan sesi. Antrean menunjukkan urutan yang sama di ketiganya, dan urutan itu **tidak** sama dengan urutan bergabung setiap kali dicoba ulang.
-
-- [ ] **Step 5: Uji penguncian giliran**
-
-Expected: hanya layar pemilik giliran yang tombolnya hidup dan bertuliskan "Giliranmu!". Layar A (host) tombolnya juga hidup walau bukan gilirannya — itu memang disengaja.
-
-- [ ] **Step 6: Uji perpindahan giliran dan pendatang telat**
-
-Tekan **Giliran berikutnya** di A. Expected: penanda pindah ke orang berikutnya di ketiga layar.
-
-Lalu buka jendela keempat D dan masuk sebagai "Dodi".
-Expected: Dodi muncul di **posisi terakhir** antrean di semua layar.
-
-- [ ] **Step 7: Uji, build, commit, deploy**
+- [x] **Step 5: Uji, build, commit, deploy**
 
 ```bash
-pnpm test && pnpm build
-git add src/lib/sesi.ts src/lib/putaran.ts src/app/room
-git commit -m "feat: kendali sesi, penanda giliran, dan antrean"
+pnpm test && pnpm build && pnpm lint
+git add -A && git commit -m "feat: kendali sesi, penanda giliran, dan antrean"
 pnpm dlx vercel@latest --prod
 ```
 

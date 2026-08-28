@@ -56,9 +56,17 @@ export function kePutaran(baris: BarisPutaran): Putaran {
   }
 }
 
-export async function putarRoda(kode: string, token: string): Promise<Putaran> {
+export async function putarRoda(
+  kode: string,
+  token: string,
+  hostToken: string | null,
+): Promise<Putaran> {
   const { data, error } = await buatKlienSupabase()
-    .rpc('putar_roda', { p_kode: kode, p_token: token })
+    .rpc('putar_roda', {
+      p_kode: kode,
+      p_token: token,
+      p_host_token: hostToken,
+    })
     .single()
 
   if (error) throw new Error(error.message)
