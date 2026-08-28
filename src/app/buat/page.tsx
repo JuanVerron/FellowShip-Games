@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { TautanBeranda } from '@/components/TautanBeranda'
 import { simpanIdentitas } from '@/lib/identitas'
 import { namaValid, rapikanNama } from '@/lib/nama'
 import { buatRoom } from '@/lib/room'
@@ -33,31 +34,35 @@ export default function BuatRoom() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-bold">Buat Room</h1>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col p-6">
+      <TautanBeranda />
 
-      <form onSubmit={kirim} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-2">
-          <span className="text-sm opacity-70">Nama kamu</span>
-          <input
-            value={nama}
-            onChange={(e) => setNama(e.target.value)}
-            maxLength={20}
-            autoFocus
-            className="min-h-[48px] rounded-lg border-2 px-3 text-lg"
-          />
-        </label>
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <h1 className="text-2xl font-bold">Buat Room</h1>
 
-        {galat && <p className="text-sm text-red-600">{galat}</p>}
+        <form onSubmit={kirim} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm opacity-70">Nama kamu</span>
+            <input
+              value={nama}
+              onChange={(e) => setNama(e.target.value)}
+              maxLength={20}
+              autoFocus
+              className="min-h-[48px] rounded-lg border-2 px-3 text-lg"
+            />
+          </label>
 
-        <button
-          type="submit"
-          disabled={mengirim}
-          className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
-        >
-          {mengirim ? 'Membuat…' : 'Buat'}
-        </button>
-      </form>
+          {galat && <p className="text-sm text-red-600">{galat}</p>}
+
+          <button
+            type="submit"
+            disabled={mengirim}
+            className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          >
+            {mengirim ? 'Membuat…' : 'Buat'}
+          </button>
+        </form>
+      </div>
     </main>
   )
 }

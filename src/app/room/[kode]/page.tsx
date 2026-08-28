@@ -1,6 +1,7 @@
 'use client'
 
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { TautanBeranda } from '@/components/TautanBeranda'
 import { useRoom } from '@/hooks/useRoom'
 import {
   bacaIdentitas,
@@ -48,8 +49,8 @@ export default function RuangTunggu({
   // memakai getServerSnapshot yang mengembalikan null, browser membaca nilai
   // sebenarnya, dan React menjahit keduanya tanpa hidrasi yang pecah.
   // Yang dibaca sengaja teks mentahnya, bukan objek hasil parse, karena
-  // snapshot wajib stabil antar panggilan - objek baru tiap kali akan
-  // membuat React merender tanpa henti.
+  // snapshot wajib stabil antar panggilan; objek baru tiap kali akan membuat
+  // React merender tanpa henti.
   const identitasMentah = useSyncExternalStore(
     langgananPenyimpanan,
     () => {
@@ -66,7 +67,7 @@ export default function RuangTunggu({
     [identitasMentah, kodeBesar],
   )
 
-  // Identitas yang menunjuk ke peserta yang sudah tidak ada dibuang, supaya
+  // Identitas yang menunjuk peserta yang sudah tidak ada dibuang, supaya
   // orangnya bisa masuk lagi sebagai peserta baru alih-alih terjebak di room
   // yang menganggapnya bukan siapa-siapa.
   useEffect(() => {
@@ -83,13 +84,19 @@ export default function RuangTunggu({
   }, [])
 
   if (memuat) {
-    return <main className="p-6">Memuat…</main>
+    return (
+      <main className="mx-auto flex max-w-md flex-col p-6">
+        <TautanBeranda />
+        <p className="mt-4">Memuat…</p>
+      </main>
+    )
   }
 
   if (galat || !room) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <p className="text-red-600">{galat ?? 'Room tidak ditemukan'}</p>
+      <main className="mx-auto flex max-w-md flex-col p-6">
+        <TautanBeranda />
+        <p className="mt-4 text-red-600">{galat ?? 'Room tidak ditemukan'}</p>
       </main>
     )
   }
@@ -97,7 +104,9 @@ export default function RuangTunggu({
   const usia = usiaDetik(diperbaruiPada, sekarang)
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-8 p-6">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
+      <TautanBeranda />
+
       <div className="text-center">
         <p className="text-sm opacity-70">Kode room</p>
         <p className="font-mono text-5xl font-bold tracking-[0.3em]">{room.kode}</p>

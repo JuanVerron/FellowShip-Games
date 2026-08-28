@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useSyncExternalStore } from 'react'
+import { TautanBeranda } from '@/components/TautanBeranda'
 import { bacaIdentitas, kunciIdentitas, simpanIdentitas } from '@/lib/identitas'
 import { kodeValid, normalisasiKode } from '@/lib/kode'
 import { namaValid, rapikanNama } from '@/lib/nama'
@@ -21,7 +22,7 @@ export default function MasukRoom() {
 
   // Satu browser hanya boleh punya satu identitas per room. Kalau kodenya
   // pernah dimasuki dari perangkat ini, yang terjadi adalah melanjutkan
-  // identitas lama — bukan membuat peserta kedua dengan nama berbeda.
+  // identitas lama, bukan membuat peserta kedua dengan nama berbeda.
   // Inilah yang membuat host tetap host setelah menutup browser, karena
   // host_token ikut tersimpan bersama identitasnya.
   const identitasMentah = useSyncExternalStore(
@@ -73,54 +74,58 @@ export default function MasukRoom() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-bold">Masuk Room</h1>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col p-6">
+      <TautanBeranda />
 
-      <form onSubmit={kirim} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-2">
-          <span className="text-sm opacity-70">Kode room</span>
-          <input
-            value={kode}
-            onChange={(e) => setKode(normalisasiKode(e.target.value))}
-            autoCapitalize="characters"
-            autoFocus
-            className="min-h-[56px] rounded-lg border-2 px-3 text-center font-mono text-3xl tracking-[0.3em]"
-          />
-        </label>
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <h1 className="text-2xl font-bold">Masuk Room</h1>
 
-        {identitasTersimpan ? (
-          <p className="rounded-lg border-2 border-amber-500 bg-amber-500/10 px-3 py-2 text-sm">
-            Kamu sudah pernah masuk room ini sebagai{' '}
-            <span className="font-semibold">{identitasTersimpan.nama}</span>
-            {identitasTersimpan.hostToken && ' (host)'}. Kamu akan dilanjutkan
-            sebagai orang yang sama.
-          </p>
-        ) : (
+        <form onSubmit={kirim} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm opacity-70">Nama kamu</span>
+            <span className="text-sm opacity-70">Kode room</span>
             <input
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              maxLength={20}
-              className="min-h-[48px] rounded-lg border-2 px-3 text-lg"
+              value={kode}
+              onChange={(e) => setKode(normalisasiKode(e.target.value))}
+              autoCapitalize="characters"
+              autoFocus
+              className="min-h-[56px] rounded-lg border-2 px-3 text-center font-mono text-3xl tracking-[0.3em]"
             />
           </label>
-        )}
 
-        {galat && <p className="text-sm text-red-600">{galat}</p>}
+          {identitasTersimpan ? (
+            <p className="rounded-lg border-2 border-amber-500 bg-amber-500/10 px-3 py-2 text-sm">
+              Kamu sudah pernah masuk room ini sebagai{' '}
+              <span className="font-semibold">{identitasTersimpan.nama}</span>
+              {identitasTersimpan.hostToken && ' (host)'}. Kamu akan dilanjutkan
+              sebagai orang yang sama.
+            </p>
+          ) : (
+            <label className="flex flex-col gap-2">
+              <span className="text-sm opacity-70">Nama kamu</span>
+              <input
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                maxLength={20}
+                className="min-h-[48px] rounded-lg border-2 px-3 text-lg"
+              />
+            </label>
+          )}
 
-        <button
-          type="submit"
-          disabled={mengirim}
-          className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
-        >
-          {mengirim
-            ? 'Masuk…'
-            : identitasTersimpan
-              ? `Lanjutkan sebagai ${identitasTersimpan.nama}`
-              : 'Masuk'}
-        </button>
-      </form>
+          {galat && <p className="text-sm text-red-600">{galat}</p>}
+
+          <button
+            type="submit"
+            disabled={mengirim}
+            className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          >
+            {mengirim
+              ? 'Masuk…'
+              : identitasTersimpan
+                ? `Lanjutkan sebagai ${identitasTersimpan.nama}`
+                : 'Masuk'}
+          </button>
+        </form>
+      </div>
     </main>
   )
 }
