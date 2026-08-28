@@ -17,7 +17,7 @@ export default function BuatRoom() {
     peristiwa.preventDefault()
     const rapi = rapikanNama(nama)
     if (!namaValid(rapi)) {
-      setGalat('Nama wajib diisi, maksimal 20 karakter.')
+      setGalat('Name is required, 20 characters max.')
       return
     }
 
@@ -28,7 +28,7 @@ export default function BuatRoom() {
       simpanIdentitas(kode, identitas)
       router.push(`/room/${kode}`)
     } catch (e) {
-      setGalat(e instanceof Error ? e.message : 'Gagal membuat room')
+      setGalat(e instanceof Error ? e.message : 'Could not create room')
       setMengirim(false)
     }
   }
@@ -38,11 +38,11 @@ export default function BuatRoom() {
       <TautanBeranda />
 
       <div className="flex flex-1 flex-col justify-center gap-6">
-        <h1 className="text-2xl font-bold">Buat Room</h1>
+        <h1 className="text-2xl font-bold">Create Room</h1>
 
         <form onSubmit={kirim} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm opacity-70">Nama kamu</span>
+            <span className="text-sm opacity-70">Your name</span>
             <input
               value={nama}
               onChange={(e) => setNama(e.target.value)}
@@ -59,7 +59,7 @@ export default function BuatRoom() {
             disabled={mengirim}
             className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
           >
-            {mengirim ? 'Membuat…' : 'Buat'}
+            {mengirim ? 'Creating…' : 'Create'}
           </button>
         </form>
       </div>

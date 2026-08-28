@@ -24,7 +24,7 @@ Detail lengkap ada di `PRD.md`. Rencana kerja langkah demi langkah ada di `docs/
 - Akses tulis langsung ke tabel ditutup. Semua perubahan keadaan lewat fungsi database yang memeriksa token.
 - Target layar utama potret HP 360px. Sasaran sentuh minimal 44px; tombol putar jauh lebih besar.
 - Animasi roda pakai transform CSS, bukan gambar per bingkai. Hormati `prefers-reduced-motion`.
-- Seluruh antarmuka berbahasa Indonesia, bernada percakapan.
+- **Seluruh antarmuka berbahasa Inggris, bernada percakapan.** Ini berlaku untuk semua teks yang dilihat peserta: tombol, label, judul, pesan galat, termasuk pesan yang dilempar fungsi database karena ikut tampil di layar. Nama fungsi, variabel, komentar kode, berkas rencana, dan pesan commit tetap berbahasa Indonesia — itu bukan antarmuka.
 - Bank berstruktur tepat dua tingkat: Tema → Sub-tema. Jangan tambah tingkat ketiga atau label lintas tema.
 
 ## Sengaja TIDAK dibangun di fase ini

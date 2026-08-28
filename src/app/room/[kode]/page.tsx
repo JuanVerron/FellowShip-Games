@@ -17,9 +17,9 @@ const WARNA_STATUS = {
 } as const
 
 const TEKS_STATUS = {
-  tersambung: 'Tersambung langsung',
-  menyambung: 'Menyambung…',
-  terputus: 'Terputus — muat ulang halaman',
+  tersambung: 'Live',
+  menyambung: 'Connecting…',
+  terputus: 'Disconnected — reload the page',
 } as const
 
 // Penyimpanan browser hanya menyiarkan peristiwa 'storage' ke tab lain, bukan
@@ -87,7 +87,7 @@ export default function RuangTunggu({
     return (
       <main className="mx-auto flex max-w-md flex-col p-6">
         <TautanBeranda />
-        <p className="mt-4">Memuat…</p>
+        <p className="mt-4">Loading…</p>
       </main>
     )
   }
@@ -96,7 +96,7 @@ export default function RuangTunggu({
     return (
       <main className="mx-auto flex max-w-md flex-col p-6">
         <TautanBeranda />
-        <p className="mt-4 text-red-600">{galat ?? 'Room tidak ditemukan'}</p>
+        <p className="mt-4 text-red-600">{galat ?? 'Room not found'}</p>
       </main>
     )
   }
@@ -108,13 +108,13 @@ export default function RuangTunggu({
       <TautanBeranda />
 
       <div className="text-center">
-        <p className="text-sm opacity-70">Kode room</p>
+        <p className="text-sm opacity-70">Room code</p>
         <p className="font-mono text-5xl font-bold tracking-[0.3em]">{room.kode}</p>
-        <p className="mt-2 text-sm opacity-70">Sebutkan kode ini ke teman-teman</p>
+        <p className="mt-2 text-sm opacity-70">Share this code with your friends</p>
       </div>
 
       <div>
-        <h2 className="mb-3 font-semibold">Peserta ({peserta.length})</h2>
+        <h2 className="mb-3 font-semibold">Participants ({peserta.length})</h2>
         <ul className="flex flex-col gap-2">
           {peserta.map((orang) => {
             const iniKamu = identitas?.participantId === orang.id
@@ -154,7 +154,7 @@ export default function RuangTunggu({
         />
         <span>
           {TEKS_STATUS[statusSaluran]}
-          {usia !== null && ` · diperbarui ${usia} detik lalu`}
+          {usia !== null && ` · updated ${usia}s ago`}
         </span>
       </p>
     </main>

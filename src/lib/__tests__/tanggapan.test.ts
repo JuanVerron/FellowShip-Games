@@ -21,7 +21,7 @@ describe('alasanPublik', () => {
 
   it('meneruskan galat konfigurasi kita sendiri walau di produksi', () => {
     const konfigurasi =
-      'NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi'
+      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required'
     expect(alasanPublik(konfigurasi, { produksi: true })).toBe(konfigurasi)
   })
 })

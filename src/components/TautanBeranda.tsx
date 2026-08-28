@@ -12,7 +12,7 @@ export function TautanBeranda() {
       className="-ml-2 inline-flex min-h-[44px] shrink-0 items-center gap-1.5 self-start px-2 text-sm opacity-70"
     >
       <span aria-hidden>&larr;</span>
-      Beranda
+      Home
     </Link>
   )
 }

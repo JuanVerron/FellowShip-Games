@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const PESAN_BARIS_HILANG = 'baris app_health tidak ditemukan'
+export const PESAN_BARIS_HILANG = 'app_health row not found'
 
 export type HasilKesehatan =
   | { sehat: true; disentuhPada: string }

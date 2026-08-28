@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 export const PESAN_ENV_KURANG =
-  'NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi'
+  'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required'
 
 export function buatKlienSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

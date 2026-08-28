@@ -41,7 +41,7 @@ describe('cekKesehatan', () => {
 
     expect(await cekKesehatan(klien)).toEqual({
       sehat: false,
-      alasan: 'baris app_health tidak ditemukan',
+      alasan: 'app_health row not found',
     })
   })
 })

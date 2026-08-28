@@ -1,7 +1,8 @@
 import { PESAN_BARIS_HILANG } from '@/lib/health'
 import { PESAN_ENV_KURANG } from '@/lib/supabase'
 
-export const ALASAN_UMUM = 'Ada yang salah di sisi server. Coba lagi sebentar lagi.'
+export const ALASAN_UMUM =
+  'Something went wrong on our side. Please try again in a moment.'
 
 /**
  * Pesan yang kita tulis sendiri, jadi isinya sudah dipastikan tidak memuat

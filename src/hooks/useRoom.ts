@@ -35,10 +35,10 @@ export function useRoom(kode: string) {
         if (dibatalkan) return
         setRoom(r)
         setPeserta(r ? await ambilPeserta(r.id) : [])
-        setGalat(r ? null : 'Room tidak ditemukan')
+        setGalat(r ? null : 'Room not found')
         if (!dibatalkan) setDiperbaruiPada(Date.now())
       } catch (e) {
-        if (!dibatalkan) setGalat(e instanceof Error ? e.message : 'Gagal memuat room')
+        if (!dibatalkan) setGalat(e instanceof Error ? e.message : 'Could not load room')
       } finally {
         if (!dibatalkan) setMemuat(false)
       }
