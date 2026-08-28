@@ -371,6 +371,11 @@ awal rencana, dan tiga di antaranya memperbaiki cacat yang nyata:
    ditentukan sekali di render pertama dan tidak bergeser saat React
    menjalankan efek dua kali di mode dev.
 
+5. **Label di paruh kiri dibalik supaya tetap tegak.** Terlihat baru setelah
+   roda tampil di produksi: separuh label berdiri terbalik, karena kotaknya
+   diputar lebih dari 180 derajat. Yang dibalik cukup teksnya, di tempat —
+   kotaknya tetap menunjuk segmennya.
+
 Kelas `motion-safe:` membuat animasi otomatis mati bagi orang yang menyalakan
 "kurangi animasi" — hasilnya tetap sampai, cuma tanpa putaran panjang.
 
@@ -433,7 +438,19 @@ browser. Hasilnya `Someone else just spun. Here comes their question.` — bukan
 galat mentah, dan bukan pertanyaan kedua. Nama batasan yang menolaknya
 diperiksa terpisah di jalan yang sama.
 
-- [x] **Step 6: Uji, build, commit, deploy**
+- [x] **Step 6: Uji tampilan di produksi lewat otomasi peramban**
+
+Dua tab pada `https://fellowship-games-seven.vercel.app/room/<kode>`:
+
+| Yang diperiksa | Hasil |
+|---|---|
+| Segmen berhenti sama di dua layar | `rotate(1822.5deg)` di keduanya, lalu `rotate(4927.5deg)` setelah putaran kedua |
+| Teks pertanyaan sama di dua layar | `QUESTION #2 — Who has shaped your life the most, and how?` di keduanya |
+| Segmen di bawah penunjuk cocok dengan teksnya | Segmen merah muda "If you could redo…" tepat di bawah ▼ saat pertanyaannya itu |
+| Muat ulang tidak memutar ulang animasi | Sudut tetap `1822.5deg`, `transition-duration` `0s` |
+| Putaran baru beranimasi dan maju | `transition-duration` `4s`, sudut naik 1822.5 → 4927.5 |
+
+- [x] **Step 7: Uji, build, commit, deploy**
 
 ```bash
 pnpm test && pnpm build && pnpm lint

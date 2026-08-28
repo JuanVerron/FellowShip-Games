@@ -73,26 +73,39 @@ export function Roda({
           transform: `rotate(${sudut}deg)`,
         }}
       >
-        {daftar.map((teks, i) => (
-          <div
-            key={i}
-            aria-hidden
-            className="absolute left-1/2 top-1/2 flex w-1/2 origin-left items-center pl-7 pr-2"
-            style={{
-              // conic-gradient mulai dari jam 12, sementara rotate() di CSS
-              // mulai dari sumbu X yang menunjuk jam 3. Selisih 90 derajat itu
-              // yang membuat label sejajar dengan segmennya, bukan meleset
-              // seperempat lingkaran.
-              transform: `translateY(-50%) rotate(${
-                i * segmen + segmen / 2 - 90
-              }deg)`,
-            }}
-          >
-            <span className="truncate text-[10px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.55)]">
-              {potong(teks)}
-            </span>
-          </div>
-        ))}
+        {daftar.map((teks, i) => {
+          const arah = i * segmen + segmen / 2
+
+          // Label di paruh kiri roda ikut terbalik kalau diputar apa adanya.
+          // Yang dibalik cukup teksnya, di tempat: kotaknya tetap menunjuk
+          // segmennya, tapi hurufnya kembali tegak di layar.
+          const terbalik = arah > 180
+
+          return (
+            <div
+              key={i}
+              aria-hidden
+              className={`absolute left-1/2 top-1/2 flex w-1/2 origin-left items-center ${
+                terbalik ? 'justify-end pl-2 pr-7' : 'justify-start pl-7 pr-2'
+              }`}
+              style={{
+                // conic-gradient mulai dari jam 12, sementara rotate() di CSS
+                // mulai dari sumbu X yang menunjuk jam 3. Selisih 90 derajat
+                // itu yang membuat label sejajar dengan segmennya, bukan
+                // meleset seperempat lingkaran.
+                transform: `translateY(-50%) rotate(${arah - 90}deg)`,
+              }}
+            >
+              <span
+                className={`truncate text-[10px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.55)]${
+                  terbalik ? ' rotate-180' : ''
+                }`}
+              >
+                {potong(teks)}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow dark:bg-neutral-900" />
