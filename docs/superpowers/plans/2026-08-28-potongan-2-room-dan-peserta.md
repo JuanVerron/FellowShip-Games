@@ -1228,6 +1228,27 @@ Verifikasi lain yang menopang: 16 pemeriksaan RPC lulus (kode 5 karakter tanpa h
 
 **Di luar rencana, sudah dikerjakan:** `src/app/layout.tsx` masih membawa `title: "Create Next App"` dan `lang="en"` dari kerangka. Judulnya terlihat peserta di tab HP, dan `lang` yang keliru membuat pembaca layar salah melafalkan sekaligus memancing tawaran terjemahan otomatis di ponsel — padahal `CLAUDE.md` mensyaratkan seluruh antarmuka berbahasa Indonesia. Keduanya diperbaiki.
 
+---
+
+## Tambahan di luar rencana, atas permintaan Juan — 2026-08-28
+
+Tiga hal berikut tidak ada di rencana asli. Dua di antaranya menambal cacat nyata yang baru kelihatan saat dipakai di HP sungguhan.
+
+**1. Satu browser satu identitas per room, dan host tetap host.**
+Sebelumnya tiap kali masuk selalu dibuat peserta **baru**. Masuk dua kali ke room yang sama dari HP yang sama membuat identitas kedua menimpa yang pertama di `localStorage` — berikut `host_token`-nya. Host kehilangan status host tanpa tanda apa pun, dan mulai Potongan 4 itu berarti kehilangan tombol Mulai dan Giliran Berikutnya.
+
+Layar Masuk kini memeriksa identitas tersimpan untuk kode itu lebih dulu. Kalau ada, kolom nama disembunyikan dan tombolnya berbunyi "Lanjutkan sebagai <nama>". Room lain tetap bisa dimasuki, karena identitas disimpan **per kode room**, bukan per browser. Karena `host_token` ikut tersimpan, host yang menutup browser lalu kembali tetap host — tanpa akun, tanpa login.
+
+`identitasMasihSah()` membuang identitas yang menunjuk peserta yang sudah tidak ada, supaya orangnya tidak terjebak di room yang menganggapnya bukan siapa-siapa.
+
+**Batas yang harus disadari:** penanda kepemilikan ini hidup di `localStorage`. Hapus data browser, ganti browser, atau buka dari perangkat lain, dan identitasnya hilang selamanya — tidak ada akun untuk memulihkannya. Itu konsekuensi langsung dari keputusan "tanpa login" di `CLAUDE.md`, bukan cacat yang bisa ditambal tanpa mencabut keputusan itu.
+
+**2. Penunjuk status realtime di kaki halaman.**
+Titik hijau/kuning/merah plus "diperbarui N detik lalu" yang menghitung sendiri. Alasannya ditemukan dengan cara yang mahal: saat langganan mati, layarnya **identik** dengan layar yang sehat tapi belum ada yang bergabung. Tanpa penunjuk ini tidak ada cara membedakan keduanya, dan itulah yang membuat kegagalan Realtime kemarin butuh berjam-jam untuk dipersempit.
+
+**3. Penanda diri `(you)` menempel di nama, bingkai oranye.**
+Sebelumnya tidak ada cara tahu baris mana milik sendiri. Sempat dicoba sebagai pil di tepi kanan, tapi `host` yang justru menempel tepi dan penandanya terdorong ke tengah.
+
 ## Definisi Selesai Potongan 2
 
 1. `pnpm test` lulus, 32 uji.
