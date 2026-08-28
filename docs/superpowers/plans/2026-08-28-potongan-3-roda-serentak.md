@@ -15,7 +15,10 @@
 ## Global Constraints
 
 - Nol biaya. Package manager: pnpm. Uji: `pnpm test`.
-- Antarmuka berbahasa Indonesia. Potret HP 360px. Sentuh minimal 44px.
+- Seluruh antarmuka berbahasa Inggris, termasuk pesan galat yang dilempar fungsi
+  database. Rencana ini ditulis sebelum aturan itu ada di `CLAUDE.md`, jadi setiap
+  cuplikan kode di bawah yang masih berbahasa Indonesia sudah diperbaiki di repo.
+  Potret HP 360px. Sentuh minimal 44px.
 - Browser tidak menulis langsung ke tabel; semua penulisan lewat fungsi `security definer`.
 - Animasi roda memakai transform CSS, bukan gambar per bingkai.
 - Hormati `prefers-reduced-motion`: roda tetap memberi hasil, tapi tanpa putaran panjang.
@@ -27,7 +30,8 @@
 
 | Berkas | Tanggung jawab |
 |---|---|
-| `supabase/migrations/0003_kolam_dan_putaran.sql` | Tabel `room_questions` dan `spins`, fungsi `putar_roda`, dan `buat_room` versi baru yang menerima daftar pertanyaan |
+| `supabase/migrations/0004_kolam_dan_putaran.sql` | Tabel `room_questions` dan `spins`, fungsi `putar_roda`, dan `buat_room` versi baru yang menerima daftar pertanyaan |
+| `scripts/sql.mjs` | Menjalankan SQL sembarang di project lewat Management API, pengganti SQL Editor untuk verifikasi dari terminal |
 | `src/data/contoh-pertanyaan.ts` | Delapan pertanyaan contoh. **Sementara** — dihapus di Potongan 5 saat bank sungguhan masuk |
 | `src/lib/roda.ts` | Matematika sudut roda. Murni, tanpa I/O, bisa diuji tanpa DOM |
 | `src/lib/putaran.ts` | Pembungkus RPC `putar_roda` dan pengambil kolam serta putaran terakhir |
@@ -40,7 +44,13 @@
 ### Task 1: Kolam pertanyaan, riwayat putaran, dan fungsi putar
 
 **Files:**
-- Create: `supabase/migrations/0003_kolam_dan_putaran.sql`
+- Create: `supabase/migrations/0004_kolam_dan_putaran.sql`
+- Create: `scripts/sql.mjs`
+
+> **Koreksi rencana (nomor migrasi).** Rencana ini menyebut `0003`, tapi nomor
+> itu sudah dipakai `0003_pesan_antarmuka_inggris.sql` — migrasi yang lahir di
+> luar rencana Potongan 2 saat antarmuka dipindah ke bahasa Inggris. Migrasi
+> potongan ini jadi `0004`.
 
 **Interfaces:**
 - Consumes: `rooms`, `participants`, `participant_secrets` (Potongan 2)
@@ -50,232 +60,85 @@
   - `public.buat_room(p_nama_host text, p_pertanyaan text[])` — **menggantikan** versi satu argumen dari Potongan 2
   - `public.putar_roda(p_kode text, p_token text)` → `table(room_question_id uuid, teks text, nomor_giliran int, benih_animasi int)`
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
-Buat `supabase/migrations/0003_kolam_dan_putaran.sql`:
+Buat `supabase/migrations/0004_kolam_dan_putaran.sql`. Isi lengkapnya ada di
+repo; tiga hal di bawah ini berbeda dari tebakan awal rencana dan sengaja
+dicatat karena masing-masing lahir dari kesalahan yang nyata:
 
-```sql
-create table if not exists public.room_questions (
-  id uuid primary key default gen_random_uuid(),
-  room_id uuid not null references public.rooms(id) on delete cascade,
-  sumber text not null default 'custom' check (sumber in ('bank', 'custom')),
-  bank_question_id text,
-  teks text not null,
-  urutan int not null,
-  sudah_keluar boolean not null default false,
-  unique (room_id, urutan)
-);
+1. **`set search_path = public, extensions`, bukan `public` saja.** `pgcrypto`
+   dipasang Supabase di skema `extensions`, jadi `gen_random_bytes` tidak
+   terlihat kalau `extensions` tidak ikut disebut. Kedua fungsi di Potongan 2
+   sudah memakai bentuk ini; rencana ini sempat menuliskan bentuk yang salah.
 
-create index if not exists room_questions_room_idx
-  on public.room_questions(room_id);
+2. **Semua `raise exception` berbahasa Inggris.** Pesan yang dilempar fungsi
+   database ikut tampil di layar peserta, jadi ia termasuk antarmuka dan
+   tunduk pada aturan bahasa di `CLAUDE.md`. Ini keputusan yang sama yang
+   melahirkan migrasi `0003`.
 
-create table if not exists public.spins (
-  id uuid primary key default gen_random_uuid(),
-  room_id uuid not null references public.rooms(id) on delete cascade,
-  participant_id uuid not null references public.participants(id) on delete cascade,
-  room_question_id uuid not null references public.room_questions(id) on delete cascade,
-  nomor_giliran int not null,
-  benih_animasi int not null,
-  dibuat_pada timestamptz not null default now(),
-  unique (room_id, nomor_giliran)
-);
+3. **Pelanggaran batasan unik ditangkap dan diganti pesan yang bisa dibaca.**
+   Tanpa penangkapan itu yang sampai ke layar adalah
+   `duplicate key value violates unique constraint "spins_room_id_nomor_giliran_key"`
+   — betul secara teknis, tapi bukan kalimat yang pantas dibaca peserta.
+   Penangkapnya tidak memindahkan penjagaan ke kode aplikasi: yang menolak
+   tetap batasan unik di database, kode cuma menerjemahkan penolakannya.
 
-create index if not exists spins_room_idx on public.spins(room_id);
+Blok `alter publication` dibungkus pemeriksaan `pg_publication_tables` dan
+diikuti `replica identity full`, mengikuti keadaan yang terbukti mengirim
+peristiwa Realtime di Potongan 2.
 
-alter table public.room_questions enable row level security;
-alter table public.spins enable row level security;
+- [x] **Step 2: Terapkan dan verifikasi**
 
-drop policy if exists "room_questions boleh dibaca" on public.room_questions;
-create policy "room_questions boleh dibaca"
-  on public.room_questions for select using (true);
-
-drop policy if exists "spins boleh dibaca" on public.spins;
-create policy "spins boleh dibaca" on public.spins for select using (true);
-
--- Menggantikan versi Potongan 2 yang hanya menerima nama host.
--- Penggantian ini disengaja: kolam pertanyaan harus terisi pada saat
--- room dibuat, supaya room tidak pernah ada dalam keadaan tanpa isi.
-drop function if exists public.buat_room(text);
-
-create or replace function public.buat_room(
-  p_nama_host text,
-  p_pertanyaan text[]
-)
-returns table (
-  room_id uuid,
-  kode text,
-  host_token text,
-  participant_id uuid,
-  participant_token text
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room_id uuid;
-  v_kode text;
-  v_host_token text;
-  v_participant_id uuid;
-  v_participant_token text;
-  v_teks text;
-  v_urutan int := 0;
-begin
-  if p_nama_host is null or length(trim(p_nama_host)) = 0
-     or length(trim(p_nama_host)) > 20 then
-    raise exception 'nama tidak sah';
-  end if;
-
-  if p_pertanyaan is null or array_length(p_pertanyaan, 1) is null then
-    raise exception 'kolam pertanyaan tidak boleh kosong';
-  end if;
-
-  v_kode := public.buat_kode_room();
-  v_host_token := encode(gen_random_bytes(24), 'hex');
-  v_participant_token := encode(gen_random_bytes(24), 'hex');
-
-  insert into public.rooms (kode) values (v_kode) returning id into v_room_id;
-  insert into public.room_secrets (room_id, host_token)
-    values (v_room_id, v_host_token);
-
-  insert into public.participants (room_id, nama, adalah_host)
-    values (v_room_id, trim(p_nama_host), true)
-    returning id into v_participant_id;
-  insert into public.participant_secrets (participant_id, token)
-    values (v_participant_id, v_participant_token);
-
-  foreach v_teks in array p_pertanyaan loop
-    if length(trim(v_teks)) > 0 then
-      insert into public.room_questions (room_id, teks, urutan)
-        values (v_room_id, trim(v_teks), v_urutan);
-      v_urutan := v_urutan + 1;
-    end if;
-  end loop;
-
-  if v_urutan = 0 then
-    raise exception 'kolam pertanyaan tidak boleh kosong';
-  end if;
-
-  return query select v_room_id, v_kode, v_host_token,
-                      v_participant_id, v_participant_token;
-end;
-$$;
-
-create or replace function public.putar_roda(p_kode text, p_token text)
-returns table (
-  room_question_id uuid,
-  teks text,
-  nomor_giliran int,
-  benih_animasi int
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-  v_participant_id uuid;
-  v_pertanyaan public.room_questions%rowtype;
-  v_benih int;
-begin
-  select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
-  if not found then
-    raise exception 'room tidak ditemukan';
-  end if;
-
-  select p.id into v_participant_id
-    from public.participants p
-    join public.participant_secrets s on s.participant_id = p.id
-   where p.room_id = v_room.id and s.token = p_token;
-  if not found then
-    raise exception 'kamu bukan peserta room ini';
-  end if;
-
-  select * into v_pertanyaan
-    from public.room_questions
-   where room_id = v_room.id
-   order by random()
-   limit 1;
-  if not found then
-    raise exception 'kolam pertanyaan kosong';
-  end if;
-
-  v_benih := floor(random() * 1000)::int;
-
-  -- Baris di bawah ini adalah kuncinya. Batasan unik (room_id,
-  -- nomor_giliran) membuat penekanan kedua yang tiba nyaris bersamaan
-  -- gagal di sini, bukan menghasilkan pertanyaan kedua.
-  insert into public.spins (
-    room_id, participant_id, room_question_id, nomor_giliran, benih_animasi
-  ) values (
-    v_room.id, v_participant_id, v_pertanyaan.id,
-    v_room.nomor_giliran_sekarang, v_benih
-  );
-
-  update public.room_questions set sudah_keluar = true
-   where id = v_pertanyaan.id;
-
-  -- Sementara: di Potongan 4 penambahan nomor giliran pindah ke fungsi
-  -- giliran_berikutnya milik host, dan baris ini dihapus.
-  update public.rooms
-     set nomor_giliran_sekarang = nomor_giliran_sekarang + 1
-   where id = v_room.id;
-
-  return query select v_pertanyaan.id, v_pertanyaan.teks,
-                      v_room.nomor_giliran_sekarang, v_benih;
-end;
-$$;
-
-grant execute on function public.buat_room(text, text[]) to anon;
-grant execute on function public.putar_roda(text, text) to anon;
-
-alter publication supabase_realtime add table public.room_questions;
-alter publication supabase_realtime add table public.spins;
-```
-
-- [ ] **Step 2: Terapkan dan verifikasi**
-
-Dashboard Supabase → **SQL Editor** → tempel → **Run**. Lalu:
-
-```sql
-select * from public.buat_room('Juan', array['Apa mimpimu?', 'Kapan terakhir menangis?', 'Lagu favoritmu?']);
-```
-
-Expected: satu baris dengan kode dan token.
-
-- [ ] **Step 3: Verifikasi kunci anti dua putaran**
-
-Pakai `kode` dan `participant_token` dari Step 2:
-
-```sql
-begin;
-select * from public.putar_roda('KODE', 'TOKEN');
-rollback;
-```
-
-Lalu buktikan penolakannya dengan memaksa nomor giliran yang sama:
-
-```sql
-select * from public.putar_roda('KODE', 'TOKEN');
-update public.rooms set nomor_giliran_sekarang = 0 where kode = 'KODE';
-select * from public.putar_roda('KODE', 'TOKEN');
-```
-
-Expected: panggilan terakhir gagal dengan galat pelanggaran batasan unik `spins_room_id_nomor_giliran_key`. Ini bukti kuncinya bekerja di lapisan yang benar.
-
-- [ ] **Step 4: Verifikasi token asing ditolak**
-
-```sql
-select * from public.putar_roda('KODE', 'token-ngawur');
-```
-
-Expected: `kamu bukan peserta room ini`.
-
-- [ ] **Step 5: Commit**
+Migrasi diterapkan dari baris perintah, bukan dari SQL Editor:
 
 ```bash
-git add supabase/migrations/0003_kolam_dan_putaran.sql
+set -a; . ./.env.local; set +a
+pnpm dlx supabase@latest db push --linked
+```
+
+Verifikasinya butuh SQL sembarang, dan `supabase db push` hanya menerapkan
+migrasi. Jalan keluarnya `scripts/sql.mjs`, pembungkus tipis untuk endpoint
+`POST /v1/projects/{ref}/database/query` di Management API — persis yang
+dipakai SQL Editor di dashboard, tapi bisa dipanggil dari terminal:
+
+```bash
+node scripts/sql.mjs "select * from public.buat_room('Juan', array['Apa mimpimu?', 'Kapan terakhir menangis?', 'Lagu favoritmu?'])"
+```
+
+Hasil: satu baris `room_id, kode, host_token, participant_id, participant_token`,
+dan `room_questions` untuk room itu berisi tiga baris `urutan` 0–2.
+
+- [x] **Step 3: Verifikasi kunci anti dua putaran**
+
+```bash
+node scripts/sql.mjs "select * from public.putar_roda('KODE', 'TOKEN')"
+node scripts/sql.mjs "update public.rooms set nomor_giliran_sekarang = 0 where kode = 'KODE'"
+node scripts/sql.mjs "select * from public.putar_roda('KODE', 'TOKEN')"
+```
+
+Hasil: panggilan pertama mengembalikan satu pertanyaan dengan `nomor_giliran` 0;
+panggilan terakhir gagal dengan `Someone else just spun. Here comes their
+question.` Yang menolak adalah batasan uniknya — dibuktikan terpisah:
+
+```bash
+node scripts/sql.mjs "select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid='public.spins'::regclass and contype='u'"
+```
+
+Hasil: `spins_room_id_nomor_giliran_key | UNIQUE (room_id, nomor_giliran)`.
+
+- [x] **Step 4: Verifikasi token asing ditolak**
+
+```bash
+node scripts/sql.mjs "select * from public.putar_roda('KODE', 'token-ngawur')"
+node scripts/sql.mjs "select * from public.putar_roda('ZZZZZ', 'token-ngawur')"
+```
+
+Hasil: `You are not in this room.` dan `Room not found.`
+
+- [x] **Step 5: Commit**
+
+```bash
+git add supabase/migrations/0004_kolam_dan_putaran.sql scripts/sql.mjs
 git commit -m "feat: kolam pertanyaan, riwayat putaran, dan fungsi putar_roda"
 ```
 
