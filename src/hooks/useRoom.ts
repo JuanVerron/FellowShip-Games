@@ -1,6 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import {
+  ambilKolam,
+  ambilPutaranTerakhir,
+  type PertanyaanKolam,
+  type Putaran,
+} from '@/lib/putaran'
 import { ambilPeserta, ambilRoom, type Peserta, type Room } from '@/lib/room'
 import { buatKlienSupabase } from '@/lib/supabase'
 
@@ -20,6 +26,8 @@ function terjemahkanStatus(status: string): StatusSaluran {
 export function useRoom(kode: string) {
   const [room, setRoom] = useState<Room | null>(null)
   const [peserta, setPeserta] = useState<Peserta[]>([])
+  const [kolam, setKolam] = useState<PertanyaanKolam[]>([])
+  const [putaran, setPutaran] = useState<Putaran | null>(null)
   const [memuat, setMemuat] = useState(true)
   const [galat, setGalat] = useState<string | null>(null)
   const [statusSaluran, setStatusSaluran] = useState<StatusSaluran>('menyambung')
@@ -34,9 +42,31 @@ export function useRoom(kode: string) {
         const r = await ambilRoom(kode)
         if (dibatalkan) return
         setRoom(r)
-        setPeserta(r ? await ambilPeserta(r.id) : [])
-        setGalat(r ? null : 'Room not found')
-        if (!dibatalkan) setDiperbaruiPada(Date.now())
+
+        if (!r) {
+          setPeserta([])
+          setKolam([])
+          setPutaran(null)
+          setGalat('Room not found')
+          setDiperbaruiPada(Date.now())
+          return
+        }
+
+        // Ketiganya ditarik bersamaan, bukan berurutan: satu siaran bisa
+        // memicu muat ulang beberapa kali per detik, dan tiga perjalanan
+        // bolak-balik yang antre terasa jelas di jaringan HP.
+        const [daftarPeserta, daftarKolam, putaranTerakhir] = await Promise.all([
+          ambilPeserta(r.id),
+          ambilKolam(r.id),
+          ambilPutaranTerakhir(r.id),
+        ])
+        if (dibatalkan) return
+
+        setPeserta(daftarPeserta)
+        setKolam(daftarKolam)
+        setPutaran(putaranTerakhir)
+        setGalat(null)
+        setDiperbaruiPada(Date.now())
       } catch (e) {
         if (!dibatalkan) setGalat(e instanceof Error ? e.message : 'Could not load room')
       } finally {
@@ -46,21 +76,17 @@ export function useRoom(kode: string) {
 
     void muatUlang()
 
-    const saluran = klien
-      .channel(`room:${kode}`)
-      .on(
+    const saluran = klien.channel(`room:${kode}`)
+    for (const tabel of ['rooms', 'participants', 'room_questions', 'spins']) {
+      saluran.on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'participants' },
+        { event: '*', schema: 'public', table: tabel },
         () => void muatUlang(),
       )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rooms' },
-        () => void muatUlang(),
-      )
-      .subscribe((status) => {
-        if (!dibatalkan) setStatusSaluran(terjemahkanStatus(status))
-      })
+    }
+    saluran.subscribe((status) => {
+      if (!dibatalkan) setStatusSaluran(terjemahkanStatus(status))
+    })
 
     // Browser HP menangguhkan tab yang tidak di depan dan memutus WebSocket-nya.
     // Siaran yang lewat selama itu hilang dan tidak dikirim ulang, jadi begitu
@@ -84,5 +110,14 @@ export function useRoom(kode: string) {
     }
   }, [kode])
 
-  return { room, peserta, memuat, galat, statusSaluran, diperbaruiPada }
+  return {
+    room,
+    peserta,
+    kolam,
+    putaran,
+    memuat,
+    galat,
+    statusSaluran,
+    diperbaruiPada,
+  }
 }

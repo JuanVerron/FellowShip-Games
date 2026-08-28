@@ -32,7 +32,7 @@
 |---|---|
 | `supabase/migrations/0004_kolam_dan_putaran.sql` | Tabel `room_questions` dan `spins`, fungsi `putar_roda`, dan `buat_room` versi baru yang menerima daftar pertanyaan |
 | `scripts/sql.mjs` | Menjalankan SQL sembarang di project lewat Management API, pengganti SQL Editor untuk verifikasi dari terminal |
-| `src/data/contoh-pertanyaan.ts` | Delapan pertanyaan contoh. **Sementara** — dihapus di Potongan 5 saat bank sungguhan masuk |
+| `src/data/contoh-pertanyaan.ts` | Delapan pertanyaan contoh berbahasa Inggris. **Sementara** — dihapus di Potongan 5 saat bank sungguhan masuk |
 | `src/lib/roda.ts` | Matematika sudut roda. Murni, tanpa I/O, bisa diuji tanpa DOM |
 | `src/lib/putaran.ts` | Pembungkus RPC `putar_roda` dan pengambil kolam serta putaran terakhir |
 | `src/components/Roda.tsx` | Menggambar roda dan menganimasikannya ke sudut yang diberikan |
@@ -249,6 +249,7 @@ git commit -m "feat: matematika sudut roda"
 **Files:**
 - Create: `src/data/contoh-pertanyaan.ts`
 - Create: `src/lib/putaran.ts`
+- Test: `src/lib/__tests__/putaran.test.ts`
 - Modify: `src/hooks/useRoom.ts` (tambah kolam dan putaran terakhir)
 - Modify: `src/app/buat/page.tsx` (kirim daftar pertanyaan ke `buatRoom`)
 - Modify: `src/lib/room.ts` (tanda tangan `buatRoom` bertambah satu argumen)
@@ -259,263 +260,68 @@ git commit -m "feat: matematika sudut roda"
   - `CONTOH_PERTANYAAN: string[]`
   - `type PertanyaanKolam = { id: string; teks: string; urutan: number; sudahKeluar: boolean }`
   - `type Putaran = { roomQuestionId: string; teks: string; nomorGiliran: number; benihAnimasi: number }`
+  - `keKolam`, `kePutaran` — penerjemah baris murni, sejalan dengan `keRoom`/`kePeserta` di `src/lib/room.ts`
   - `putarRoda(kode: string, token: string): Promise<Putaran>`
   - `ambilKolam(roomId: string): Promise<PertanyaanKolam[]>`
   - `ambilPutaranTerakhir(roomId: string): Promise<Putaran | null>`
   - `buatRoom(namaHost: string, pertanyaan: string[])` — tanda tangan baru
   - `useRoom(kode)` mengembalikan tambahan: `kolam: PertanyaanKolam[]`, `putaran: Putaran | null`
 
-- [ ] **Step 1: Tulis pertanyaan contoh sementara**
+- [x] **Step 1: Tulis pertanyaan contoh sementara**
 
-Buat `src/data/contoh-pertanyaan.ts`:
+Buat `src/data/contoh-pertanyaan.ts` berisi delapan pertanyaan. **Berbahasa
+Inggris**, bukan Indonesia seperti tertulis di versi awal rencana ini: teksnya
+dibaca peserta di layar, jadi ia antarmuka.
 
-```typescript
-// SEMENTARA. Dihapus di Potongan 5 saat bank pertanyaan sungguhan masuk.
-export const CONTOH_PERTANYAAN: string[] = [
-  'Apa hal kecil yang bikin kamu senang minggu ini?',
-  'Kapan terakhir kali kamu benar-benar tertawa lepas?',
-  'Siapa orang yang paling berjasa di hidupmu, dan kenapa?',
-  'Apa yang paling kamu takutkan setahun ke depan?',
-  'Kebiasaan apa yang pengin banget kamu hentikan?',
-  'Doa apa yang paling sering kamu ulang?',
-  'Apa hal paling memalukan yang pernah kamu lakukan?',
-  'Kalau bisa mengulang satu keputusan, yang mana?',
-]
-```
+- [x] **Step 2: Tulis pembungkus putaran**
 
-- [ ] **Step 2: Tulis pembungkus putaran**
+Buat `src/lib/putaran.ts`. Bedanya dari cuplikan awal rencana: pemetaan baris
+ditarik keluar jadi `keKolam` dan `kePutaran` yang murni, mengikuti pola
+`keRoom`/`kePeserta` yang sudah ada di `src/lib/room.ts`. Itu membuat bagian
+yang paling gampang salah — PostgREST mengembalikan relasi bertingkat kadang
+sebagai objek, kadang sebagai larik — bisa diuji tanpa menyentuh jaringan.
 
-Buat `src/lib/putaran.ts`:
+`ambilPutaranTerakhir` inilah yang membuat layar pulih benar setelah dimuat
+ulang: keadaan roda tidak disimpan di memori browser, tapi selalu dibaca ulang
+dari putaran terakhir yang tercatat.
 
-```typescript
-import { buatKlienSupabase } from '@/lib/supabase'
+- [x] **Step 3: Ubah tanda tangan `buatRoom`**
 
-export type PertanyaanKolam = {
-  id: string
-  teks: string
-  urutan: number
-  sudahKeluar: boolean
-}
+`src/lib/room.ts` menerima argumen kedua `pertanyaan: string[]` dan
+meneruskannya sebagai `p_pertanyaan`. `src/app/buat/page.tsx` memanggil
+`buatRoom(rapi, CONTOH_PERTANYAAN)`.
 
-export type Putaran = {
-  roomQuestionId: string
-  teks: string
-  nomorGiliran: number
-  benihAnimasi: number
-}
+- [x] **Step 4: Perluas hook**
 
-export async function putarRoda(kode: string, token: string): Promise<Putaran> {
-  const { data, error } = await buatKlienSupabase()
-    .rpc('putar_roda', { p_kode: kode, p_token: token })
-    .single()
+> **Koreksi rencana.** Versi awal rencana menyuruh **mengganti seluruh isi**
+> `src/hooks/useRoom.ts` dengan cuplikan yang lebih pendek. Kalau dituruti,
+> tiga hal yang lahir di Potongan 2 ikut terhapus: `statusSaluran`,
+> `diperbaruiPada`, dan penarikan ulang saat tab kembali terlihat — penjagaan
+> yang justru ada karena browser HP memutus WebSocket saat tab tidak di depan.
+> Yang dikerjakan: **memperluas**, bukan mengganti.
 
-  if (error) throw new Error(error.message)
+Yang berubah:
 
-  const hasil = data as {
-    room_question_id: string
-    teks: string
-    nomor_giliran: number
-    benih_animasi: number
-  }
+- `kolam` dan `putaran` masuk sebagai state baru dan ikut dikembalikan.
+- `muatUlang` menarik peserta, kolam, dan putaran terakhir lewat satu
+  `Promise.all`, bukan berurutan. Satu siaran bisa memicu muat ulang beberapa
+  kali per detik, dan tiga perjalanan bolak-balik yang antre terasa jelas di
+  jaringan HP.
+- Langganan `postgres_changes` dijadikan perulangan atas empat tabel: `rooms`,
+  `participants`, `room_questions`, `spins`.
+- Cabang "room tidak ada" mengosongkan kolam dan putaran, supaya sisa layar
+  tidak menampilkan data room sebelumnya.
 
-  return {
-    roomQuestionId: hasil.room_question_id,
-    teks: hasil.teks,
-    nomorGiliran: hasil.nomor_giliran,
-    benihAnimasi: hasil.benih_animasi,
-  }
-}
-
-export async function ambilKolam(roomId: string): Promise<PertanyaanKolam[]> {
-  const { data, error } = await buatKlienSupabase()
-    .from('room_questions')
-    .select('id, teks, urutan, sudah_keluar')
-    .eq('room_id', roomId)
-    .order('urutan', { ascending: true })
-
-  if (error) throw new Error(error.message)
-
-  return (data as { id: string; teks: string; urutan: number; sudah_keluar: boolean }[])
-    .map((baris) => ({
-      id: baris.id,
-      teks: baris.teks,
-      urutan: baris.urutan,
-      sudahKeluar: baris.sudah_keluar,
-    }))
-}
-
-export async function ambilPutaranTerakhir(roomId: string): Promise<Putaran | null> {
-  const { data, error } = await buatKlienSupabase()
-    .from('spins')
-    .select('room_question_id, nomor_giliran, benih_animasi, room_questions(teks)')
-    .eq('room_id', roomId)
-    .order('nomor_giliran', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) throw new Error(error.message)
-  if (!data) return null
-
-  const baris = data as unknown as {
-    room_question_id: string
-    nomor_giliran: number
-    benih_animasi: number
-    room_questions: { teks: string } | { teks: string }[]
-  }
-
-  const pertanyaan = Array.isArray(baris.room_questions)
-    ? baris.room_questions[0]
-    : baris.room_questions
-
-  return {
-    roomQuestionId: baris.room_question_id,
-    teks: pertanyaan?.teks ?? '',
-    nomorGiliran: baris.nomor_giliran,
-    benihAnimasi: baris.benih_animasi,
-  }
-}
-```
-
-`ambilPutaranTerakhir` inilah yang membuat layar pulih benar setelah dimuat ulang: keadaan roda tidak disimpan di memori browser, tapi selalu dibaca ulang dari putaran terakhir yang tercatat.
-
-- [ ] **Step 3: Ubah tanda tangan `buatRoom`**
-
-Di `src/lib/room.ts`, ganti fungsi `buatRoom` menjadi:
-
-```typescript
-export async function buatRoom(
-  namaHost: string,
-  pertanyaan: string[],
-): Promise<{ kode: string; identitas: Identitas }> {
-  const { data, error } = await buatKlienSupabase()
-    .rpc('buat_room', { p_nama_host: namaHost, p_pertanyaan: pertanyaan })
-    .single()
-
-  if (error) throw new Error(error.message)
-
-  const hasil = data as {
-    room_id: string
-    kode: string
-    host_token: string
-    participant_id: string
-    participant_token: string
-  }
-
-  return {
-    kode: hasil.kode,
-    identitas: {
-      roomId: hasil.room_id,
-      participantId: hasil.participant_id,
-      token: hasil.participant_token,
-      nama: namaHost,
-      hostToken: hasil.host_token,
-    },
-  }
-}
-```
-
-Di `src/app/buat/page.tsx`, ubah pemanggilannya dan tambahkan impornya:
-
-```typescript
-import { CONTOH_PERTANYAAN } from '@/data/contoh-pertanyaan'
-```
-
-```typescript
-const { kode, identitas } = await buatRoom(rapi, CONTOH_PERTANYAAN)
-```
-
-- [ ] **Step 4: Perluas hook**
-
-Di `src/hooks/useRoom.ts`, ganti seluruh isi berkas:
-
-```typescript
-'use client'
-
-import { useEffect, useState } from 'react'
-import {
-  ambilKolam,
-  ambilPutaranTerakhir,
-  type PertanyaanKolam,
-  type Putaran,
-} from '@/lib/putaran'
-import { ambilPeserta, ambilRoom, type Peserta, type Room } from '@/lib/room'
-import { buatKlienSupabase } from '@/lib/supabase'
-
-export function useRoom(kode: string) {
-  const [room, setRoom] = useState<Room | null>(null)
-  const [peserta, setPeserta] = useState<Peserta[]>([])
-  const [kolam, setKolam] = useState<PertanyaanKolam[]>([])
-  const [putaran, setPutaran] = useState<Putaran | null>(null)
-  const [memuat, setMemuat] = useState(true)
-  const [galat, setGalat] = useState<string | null>(null)
-
-  useEffect(() => {
-    let dibatalkan = false
-    const klien = buatKlienSupabase()
-
-    async function muatUlang() {
-      try {
-        const r = await ambilRoom(kode)
-        if (dibatalkan) return
-
-        setRoom(r)
-        if (!r) {
-          setPeserta([])
-          setKolam([])
-          setPutaran(null)
-          setGalat('Room tidak ditemukan')
-          return
-        }
-
-        const [daftarPeserta, daftarKolam, putaranTerakhir] = await Promise.all([
-          ambilPeserta(r.id),
-          ambilKolam(r.id),
-          ambilPutaranTerakhir(r.id),
-        ])
-        if (dibatalkan) return
-
-        setPeserta(daftarPeserta)
-        setKolam(daftarKolam)
-        setPutaran(putaranTerakhir)
-        setGalat(null)
-      } catch (e) {
-        if (!dibatalkan) setGalat(e instanceof Error ? e.message : 'Gagal memuat room')
-      } finally {
-        if (!dibatalkan) setMemuat(false)
-      }
-    }
-
-    void muatUlang()
-
-    const saluran = klien.channel(`room:${kode}`)
-    for (const tabel of ['rooms', 'participants', 'room_questions', 'spins']) {
-      saluran.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: tabel },
-        () => void muatUlang(),
-      )
-    }
-    saluran.subscribe()
-
-    return () => {
-      dibatalkan = true
-      void klien.removeChannel(saluran)
-    }
-  }, [kode])
-
-  return { room, peserta, kolam, putaran, memuat, galat }
-}
-```
-
-- [ ] **Step 5: Pastikan uji dan build masih bersih**
+- [x] **Step 5: Pastikan uji dan build masih bersih**
 
 Run: `pnpm test && pnpm build`
-Expected: uji LULUS 26, build tanpa galat TypeScript.
+Hasil: uji LULUS 46 di 10 berkas, build tanpa galat TypeScript.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
-git add src/data src/lib/putaran.ts src/lib/room.ts src/hooks/useRoom.ts src/app/buat/page.tsx
+git add src/data src/lib/putaran.ts src/lib/__tests__/putaran.test.ts \
+        src/lib/room.ts src/hooks/useRoom.ts src/app/buat/page.tsx
 git commit -m "feat: pembungkus putaran dan hook yang menyimak spins"
 ```
 
@@ -750,7 +556,7 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 3
 
-1. `pnpm test` lulus, 42 uji, 9 berkas. `pnpm build` bersih.
+1. `pnpm test` lulus, 46 uji, 10 berkas. `pnpm build` bersih.
 2. Dua HP di URL produksi: satu menekan PUTAR, kedua layar berhenti di segmen yang sama dengan teks pertanyaan identik.
 3. Muat ulang halaman mengembalikan pertanyaan terakhir tanpa perlu memutar lagi.
 4. Dua penekanan hampir bersamaan menghasilkan tepat satu pertanyaan; yang kalah dapat pesan yang bisa dibaca, bukan layar rusak.

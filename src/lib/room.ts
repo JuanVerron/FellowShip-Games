@@ -57,9 +57,10 @@ export function kePeserta(baris: BarisPeserta): Peserta {
 
 export async function buatRoom(
   namaHost: string,
+  pertanyaan: string[],
 ): Promise<{ kode: string; identitas: Identitas }> {
   const { data, error } = await buatKlienSupabase()
-    .rpc('buat_room', { p_nama_host: namaHost })
+    .rpc('buat_room', { p_nama_host: namaHost, p_pertanyaan: pertanyaan })
     .single()
 
   if (error) throw new Error(error.message)

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { TautanBeranda } from '@/components/TautanBeranda'
+import { CONTOH_PERTANYAAN } from '@/data/contoh-pertanyaan'
 import { simpanIdentitas } from '@/lib/identitas'
 import { namaValid, rapikanNama } from '@/lib/nama'
 import { buatRoom } from '@/lib/room'
@@ -24,7 +25,7 @@ export default function BuatRoom() {
     setMengirim(true)
     setGalat(null)
     try {
-      const { kode, identitas } = await buatRoom(rapi)
+      const { kode, identitas } = await buatRoom(rapi, CONTOH_PERTANYAAN)
       simpanIdentitas(kode, identitas)
       router.push(`/room/${kode}`)
     } catch (e) {
