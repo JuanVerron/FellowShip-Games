@@ -55,7 +55,7 @@
   - `public.buat_room(p_nama_host text)` → `table(room_id uuid, kode text, host_token text, participant_id uuid, participant_token text)`
   - `public.masuk_room(p_kode text, p_nama text)` → `table(room_id uuid, participant_id uuid, participant_token text)`
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
 Buat `supabase/migrations/0002_room_dan_peserta.sql`:
 
@@ -232,8 +232,31 @@ $$;
 grant execute on function public.buat_room(text) to anon;
 grant execute on function public.masuk_room(text, text) to anon;
 
-alter publication supabase_realtime add table public.rooms;
-alter publication supabase_realtime add table public.participants;
+-- Idempoten: 'alter publication ... add table' melempar galat kalau tabelnya
+-- sudah terdaftar, dan galat itu menggagalkan sisa eksekusi. Dibungkus
+-- pemeriksaan supaya berkas ini aman dijalankan ulang berapa kali pun.
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime'
+       and schemaname = 'public' and tablename = 'rooms'
+  ) then
+    alter publication supabase_realtime add table public.rooms;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime'
+       and schemaname = 'public' and tablename = 'participants'
+  ) then
+    alter publication supabase_realtime add table public.participants;
+  end if;
+end $$;
 ```
 
 Perhatikan `masuk_room` sudah menangani opsi `izinkan_join_telat` walau tombol untuk mengaturnya baru dibuat di Potongan 5. Aturannya ditulis sekali di tempat yang benar; yang menyusul cuma cara mengubah nilainya.
@@ -243,7 +266,7 @@ Perhatikan `masuk_room` sudah menangani opsi `izinkan_join_telat` walau tombol u
 Dashboard Supabase → **SQL Editor** → **New query** → tempel seluruh isi berkas → **Run**.
 Expected: `Success. No rows returned`.
 
-Kalau `alter publication` mengeluh tabelnya sudah ada di publikasi, aman diabaikan.
+Dua `alter publication` di akhir berkas dibungkus pemeriksaan `pg_publication_tables`. Tanpa itu, menjalankan berkas ini dua kali melempar galat "table is already member of publication" yang **menggagalkan sisa eksekusi** — bukan sekadar peringatan yang bisa diabaikan. Dengan pembungkus itu berkasnya aman dijalankan ulang.
 
 - [ ] **Step 3: Verifikasi buat_room bekerja**
 
