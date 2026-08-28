@@ -157,7 +157,7 @@ git commit -m "feat: kolam pertanyaan, riwayat putaran, dan fungsi putar_roda"
   - `sudutSegmen(jumlah: number): number`
   - `sudutAkhir(indeks: number, jumlah: number, benih: number): number`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/roda.test.ts`:
 
@@ -198,12 +198,12 @@ describe('sudutAkhir', () => {
 
 Uji terakhir ada karena pembagian dengan nol di JavaScript menghasilkan `Infinity`, bukan galat — dan `Infinity` yang masuk ke `transform: rotate()` membuat roda hilang dari layar tanpa satu pun pesan galat.
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/roda'`.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/roda.ts`:
 
@@ -212,7 +212,7 @@ export const PUTARAN_MINIMAL = 4
 export const RAGAM_PUTARAN = 3
 
 export function sudutSegmen(jumlah: number): number {
-  if (jumlah < 1) throw new Error('kolam pertanyaan kosong')
+  if (jumlah < 1) throw new Error('This room has no questions left.')
   return 360 / jumlah
 }
 
@@ -228,12 +228,14 @@ export function sudutAkhir(
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 7 berkas uji, 26 uji.
+Hasil: LULUS — 9 berkas uji, 42 uji. Rencana ini menebak 7 berkas dan
+26 uji; Potongan 2 berakhir dengan 8 berkas dan 36 uji karena tiga tambahan
+di luar rencana, jadi angka acuannya bergeser ke atas.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/roda.ts src/lib/__tests__/roda.test.ts
@@ -748,7 +750,7 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 3
 
-1. `pnpm test` lulus, 26 uji. `pnpm build` bersih.
+1. `pnpm test` lulus, 42 uji, 9 berkas. `pnpm build` bersih.
 2. Dua HP di URL produksi: satu menekan PUTAR, kedua layar berhenti di segmen yang sama dengan teks pertanyaan identik.
 3. Muat ulang halaman mengembalikan pertanyaan terakhir tanpa perlu memutar lagi.
 4. Dua penekanan hampir bersamaan menghasilkan tepat satu pertanyaan; yang kalah dapat pesan yang bisa dibaca, bukan layar rusak.
