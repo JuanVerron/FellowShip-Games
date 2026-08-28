@@ -685,7 +685,7 @@ Dua hal yang baru ketahuan saat dikerjakan:
 Run: `pnpm dlx vercel@latest --prod`
 Expected: keluar URL `https://fellowship-games-….vercel.app`.
 
-- [ ] **Step 7: Uji dari HP sungguhan**
+- [x] **Step 7: Uji dari HP sungguhan**
 
 Buka **https://fellowship-games-seven.vercel.app** di browser HP, tekan **Uji koneksi database**.
 Expected: teks hijau "Tersambung…". Ini bukti Potongan 1 selesai — bukan lulusnya uji di laptop.
@@ -710,9 +710,9 @@ Kalau `.vercel` sudah masuk `.gitignore` bawaan, lewati saja — memang tidak pe
 
 ---
 
-## Status: online, tinggal satu uji dari HP — 2026-08-28
+## Status: SELESAI — 2026-08-28
 
-Aplikasi hidup di **https://fellowship-games-seven.vercel.app**, tersambung Supabase, cron harian terdaftar. Semua tugas selesai kecuali satu hal yang memang tidak bisa diwakilkan: membuka URL itu dari HP sungguhan dan menekan tombolnya (Task 5 Step 7, Definisi Selesai butir 2).
+Aplikasi hidup di **https://fellowship-games-seven.vercel.app**, tersambung Supabase, cron harian terdaftar. Juan sudah membuka URL itu dari HP dan tombolnya menyala hijau — Definisi Selesai butir 2 terpenuhi, dan dengan itu seluruh Potongan 1 selesai.
 
 **Bukti dari produksi**, bukan dari laptop:
 
@@ -727,7 +727,7 @@ Aplikasi hidup di **https://fellowship-games-seven.vercel.app**, tersambung Supa
 
 Rantai penuhnya terbukti: browser → fungsi Vercel → PostgREST → RLS → fungsi `security definer` → tulisan yang benar-benar mendarat di database. Itu yang menahan Supabase dari pause, dan kuncinya tetap menolak yang tak berwenang.
 
-**Yang tersisa:** buka dari HP. Lalu Potongan 2 boleh ditulis.
+**Satu-satunya yang belum terlihat:** log cron pertama, yang baru berjalan 2026-08-29 antara 03.00-03.59 UTC (10.00-10.59 WIB). Periksa di Vercel -> Cron Jobs -> View Logs; harus 200, bukan 401.
 
 ## Definisi Selesai Potongan 1
 

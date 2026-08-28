@@ -17,7 +17,7 @@ Detailnya ada di bagian "Prasyarat Manual" di rencana Potongan 1.
 
 | # | Berkas rencana | Hasil yang bisa dibuka dan diuji | Selesai |
 |---|---|---|---|
-| 1 | `2026-08-28-potongan-1-tulang-punggung-online.md` | URL publik hidup di Vercel, tersambung Supabase, cron anti-pause jalan | hampir — tinggal uji dari HP |
+| 1 | `2026-08-28-potongan-1-tulang-punggung-online.md` | URL publik hidup di Vercel, tersambung Supabase, cron anti-pause jalan | [x] |
 | 2 | `2026-08-28-potongan-2-room-dan-peserta.md` | Buat room dapat kode; orang lain masuk; daftar peserta hidup di semua HP | [ ] |
 | 3 | `2026-08-28-potongan-3-roda-serentak.md` | Roda berputar dan berhenti di pertanyaan yang sama di semua layar | [ ] |
 | 4 | `2026-08-28-potongan-4-giliran-dan-aturan-sesi.md` | Urutan diacak, tombol terkunci per giliran, host memindah giliran | [ ] |
