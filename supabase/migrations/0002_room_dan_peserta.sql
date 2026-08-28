@@ -199,3 +199,19 @@ begin
     alter publication supabase_realtime add table public.participants;
   end if;
 end $$;
+
+-- Realtime menuntut lebih dari sekadar tabel terdaftar di publikasi. Saat
+-- pertama kali dijalankan, langganan postgres_changes berstatus SUBSCRIBED
+-- tapi tidak satu pun peristiwa sampai, sementara broadcast pada project yang
+-- sama sampai dengan selamat — jadi transport dan otentikasinya sehat.
+-- Menjalankan ulang blok publikasi di atas berikut dua baris di bawah ini
+-- membuatnya bekerja; peristiwa INSERT sampai dalam 592 ms.
+--
+-- Mana dari keduanya yang menjadi obatnya tidak terukur, karena keadaan
+-- publikasi sebelum perbaikan tidak sempat direkam. Secara teori
+-- 'replica identity' tidak berpengaruh untuk INSERT, sehingga dugaan
+-- terkuatnya adalah publikasinya yang belum terisi. Keduanya tetap ditulis
+-- di sini supaya keadaan yang terbukti jalan bisa direproduksi utuh, dan
+-- 'full' memang tetap dibutuhkan nanti untuk menyaring UPDATE dan DELETE.
+alter table public.rooms replica identity full;
+alter table public.participants replica identity full;

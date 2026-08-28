@@ -1168,7 +1168,7 @@ export default function RuangTunggu({
 }
 ```
 
-- [ ] **Step 5: Uji dua peramban sekaligus**
+- [x] **Step 5: Uji dua peramban sekaligus**
 
 Run: `pnpm dev`
 
@@ -1180,7 +1180,11 @@ Expected: "Budi" muncul di daftar peserta jendela pertama dalam beberapa detik, 
 
 Kalau tidak muncul: buka konsol browser dan cari galat langganan. Penyebab paling sering adalah `alter publication supabase_realtime add table` di Task 1 yang belum benar-benar jalan — periksa di Supabase → **Database → Replication**.
 
-- [ ] **Step 6: Uji penolakan nama kembar**
+Ini benar-benar terjadi saat potongan ini dikerjakan, dan gejalanya menipu: status langganan **`SUBSCRIBED`**, tidak ada galat apa pun di konsol, tapi tidak satu peristiwa pun sampai. Cara memisahkan sebabnya dengan cepat: berlangganan `broadcast` di project yang sama. Kalau broadcast sampai, transport dan otentikasi sehat dan masalahnya pasti di sisi replikasi tabel — bukan di kunci, jaringan, atau kode hook.
+
+Satu jebakan lagi saat memverifikasi perbaikannya. Peristiwa pertama yang muncul setelah publikasi dibetulkan bisa berupa **tunggakan WAL** — perubahan lama yang baru terurai, bukan pengiriman langsung. Uji yang menerima peristiwa apa pun akan lolos secara palsu. Uji yang benar hanya menerima peristiwa untuk baris yang dibuat **setelah** langganan aktif, misalnya dengan nama peserta yang mengandung stempel waktu.
+
+- [x] **Step 6: Uji penolakan nama kembar**
 
 Di jendela penyamaran kedua, masuk ke kode yang sama dengan nama "Budi".
 Expected: pesan merah `nama sudah dipakai di room ini`, dan tidak berpindah halaman.
@@ -1190,7 +1194,7 @@ Expected: pesan merah `nama sudah dipakai di room ini`, dan tidak berpindah hala
 Run: `pnpm test && pnpm build`
 Expected: uji LULUS, build tanpa galat TypeScript.
 
-- [ ] **Step 8: Commit dan deploy**
+- [x] **Step 8: Commit dan deploy**
 
 ```bash
 git add src/app
