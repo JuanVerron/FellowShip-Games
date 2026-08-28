@@ -171,7 +171,7 @@ git commit -m "feat: pengacakan urutan, penguncian giliran, dan ekor antrean"
   - `pemilikGiliran(peserta: Peserta[], nomorGiliran: number): Peserta | null`
   - `bolehMemutar(args: { participantId: string | null; adalahHost: boolean; pemilik: Peserta | null }): boolean`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/giliran.test.ts`:
 
@@ -234,12 +234,12 @@ describe('bolehMemutar', () => {
 })
 ```
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/giliran'`.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/giliran.ts`:
 
@@ -247,8 +247,12 @@ Buat `src/lib/giliran.ts`:
 import type { Peserta } from '@/lib/room'
 
 export function pesertaTerurut(peserta: Peserta[]): Peserta[] {
+  // Menyalin dulu sebelum mengurutkan. `sort` mengubah lariknya di tempat, dan
+  // larik yang masuk ke sini datang langsung dari state React — mengubahnya
+  // berarti mengubah state tanpa lewat setter. Cuplikan awal rencana lupa ini.
   return peserta
     .filter((orang) => orang.urutanGiliran !== null)
+    .slice()
     .sort((a, b) => (a.urutanGiliran ?? 0) - (b.urutanGiliran ?? 0))
 }
 
@@ -276,12 +280,14 @@ export function bolehMemutar({
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 8 berkas uji, 35 uji.
+Hasil: LULUS — 11 berkas uji, 62 uji. Rencana ini menebak 8 berkas dan 35 uji;
+angka acuannya bergeser ke atas karena Potongan 2 dan 3 menambah beberapa hal
+di luar rencana.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/giliran.ts src/lib/__tests__/giliran.test.ts
@@ -589,7 +595,7 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 4
 
-1. `pnpm test` lulus, 35 uji. `pnpm build` bersih.
+1. `pnpm test` lulus, 62 uji di 11 berkas. `pnpm build` dan `pnpm lint` bersih.
 2. Tiga HP di URL produksi: setelah host menekan Mulai, urutan antrean sama di ketiganya dan berbeda dari urutan bergabung.
 3. Hanya layar pemilik giliran yang tombol putarnya hidup; layar host juga hidup.
 4. `putar_roda` dengan token peserta bukan pemilik giliran dan tanpa host token ditolak database dengan `sekarang bukan giliranmu`.
