@@ -76,10 +76,13 @@ export function Roda({
         {daftar.map((teks, i) => {
           const arah = i * segmen + segmen / 2
 
-          // Label di paruh kiri roda ikut terbalik kalau diputar apa adanya.
-          // Yang dibalik cukup teksnya, di tempat: kotaknya tetap menunjuk
-          // segmennya, tapi hurufnya kembali tegak di layar.
-          const terbalik = arah > 180
+          // Yang menentukan huruf berdiri terbalik atau tidak bukan sudut
+          // segmennya sendiri, tapi sudutnya setelah rodanya ikut diputar.
+          // Dihitung dari sudut akhir, bukan sudut sesaat: selama empat detik
+          // animasi teksnya memang tidak terbaca, dan yang dibaca orang adalah
+          // roda yang sudah berhenti.
+          const arahLayar = (((arah - 90 + sudut) % 360) + 360) % 360
+          const terbalik = arahLayar > 90 && arahLayar < 270
 
           return (
             <div
