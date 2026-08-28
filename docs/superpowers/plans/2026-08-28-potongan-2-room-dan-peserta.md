@@ -1209,6 +1209,25 @@ Expected: nama peserta kedua muncul di HP pertama tanpa disentuh.
 
 ---
 
+---
+
+## Status: sinkronisasi terbukti di produksi — 2026-08-28
+
+Semua task selesai. Tersisa satu butir yang memang tidak bisa diwakilkan: **Task 5 Step 9, uji dari dua HP sungguhan**.
+
+**Bukti dari produksi**, bukan dari laptop. Halaman ruang tunggu `https://fellowship-games-seven.vercel.app/room/NRRZ5` dibuka di browser, lalu peserta ditambahkan dari klien terpisah tanpa menyentuh halaman itu:
+
+| Saat | Isi halaman |
+|---|---|
+| Sebelum | `Peserta (1)` — UjiProduksi, host |
+| Sesudah peserta lain masuk | `Peserta (2)` — UjiProduksi (host), DariHPLain |
+
+Halaman berubah **tanpa dimuat ulang**. Itu inti Potongan 2.
+
+Verifikasi lain yang menopang: 16 pemeriksaan RPC lulus (kode 5 karakter tanpa huruf rancu, dua token 48-hex berbeda, lima penolakan dengan pesan tepat, dan `room_secrets` serta `participant_secrets` mengembalikan nol baris ke `anon`); peristiwa `postgres_changes` untuk peserta yang dibuat setelah langganan aktif sampai dalam 592 ms; 8 berkas uji / 32 uji lulus; `tsc`, `lint`, dan `build` bersih.
+
+**Di luar rencana, sudah dikerjakan:** `src/app/layout.tsx` masih membawa `title: "Create Next App"` dan `lang="en"` dari kerangka. Judulnya terlihat peserta di tab HP, dan `lang` yang keliru membuat pembaca layar salah melafalkan sekaligus memancing tawaran terjemahan otomatis di ponsel — padahal `CLAUDE.md` mensyaratkan seluruh antarmuka berbahasa Indonesia. Keduanya diperbaiki.
+
 ## Definisi Selesai Potongan 2
 
 1. `pnpm test` lulus, 32 uji.
