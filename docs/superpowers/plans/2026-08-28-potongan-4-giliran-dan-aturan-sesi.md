@@ -15,7 +15,10 @@
 ## Global Constraints
 
 - Nol biaya. Package manager: pnpm. Uji: `pnpm test`.
-- Antarmuka berbahasa Indonesia. Potret HP 360px. Sentuh minimal 44px.
+- Seluruh antarmuka berbahasa Inggris, termasuk pesan galat yang dilempar fungsi
+  database. Rencana ini ditulis sebelum aturan itu ada di `CLAUDE.md`, jadi setiap
+  cuplikan kode di bawah yang masih berbahasa Indonesia sudah diperbaiki di repo.
+  Potret HP 360px. Sentuh minimal 44px.
 - Penguncian giliran ditegakkan di database, bukan hanya dengan `disabled` di browser.
 - Urutan diacak tepat sekali saat Mulai, lalu tetap sampai sesi selesai.
 - Peserta yang telat bergabung menempati posisi terakhir, bukan disisipkan acak.
@@ -27,7 +30,8 @@
 
 | Berkas | Tanggung jawab |
 |---|---|
-| `supabase/migrations/0004_giliran.sql` | Fungsi `mulai_sesi`, `giliran_berikutnya`, serta versi baru `putar_roda` dan `masuk_room` |
+| `supabase/migrations/0005_giliran.sql` | Fungsi `pemilik_giliran`, `mulai_sesi`, `giliran_berikutnya`, serta versi baru `putar_roda` dan `masuk_room` |
+| `scripts/verifikasi-giliran.mjs` | Verifikasi seluruh alur giliran lewat jalur anon yang sama dengan browser |
 | `src/lib/giliran.ts` | Menghitung siapa pemilik giliran dan siapa yang boleh memutar. Murni, tanpa I/O |
 | `src/lib/sesi.ts` | Pembungkus RPC `mulai_sesi` dan `giliran_berikutnya` |
 | `src/lib/putaran.ts` | Diperluas: `putarRoda` menerima `hostToken` opsional |
@@ -38,320 +42,117 @@
 ### Task 1: Fungsi giliran di database
 
 **Files:**
-- Create: `supabase/migrations/0004_giliran.sql`
+- Create: `supabase/migrations/0005_giliran.sql`
+- Create: `scripts/verifikasi-giliran.mjs`
+- Modify: `scripts/verifikasi-putaran.mjs` (ikut tanda tangan `putar_roda` yang baru)
+
+> **Koreksi rencana (nomor migrasi).** Rencana ini menyebut `0004`, tapi nomor
+> itu sudah dipakai `0004_kolam_dan_putaran.sql` di Potongan 3 — yang sendirinya
+> bergeser dari `0003` karena migrasi pesan antarmuka Inggris. Migrasi potongan
+> ini jadi `0005`.
 
 **Interfaces:**
 - Consumes: `rooms`, `participants`, `room_secrets`, `participant_secrets`, `spins` (Potongan 2–3)
 - Produces:
+  - `public.pemilik_giliran(p_room_id uuid, p_nomor int)` → `uuid`
   - `public.mulai_sesi(p_kode text, p_host_token text)` → `void`
-  - `public.giliran_berikutnya(p_kode text, p_host_token text)` → `int` (nomor giliran yang baru)
+  - `public.giliran_berikutnya(p_kode text, p_host_token text)` → `int`
   - `public.putar_roda(p_kode text, p_token text, p_host_token text)` — **menggantikan** versi dua argumen
   - `public.masuk_room(p_kode text, p_nama text)` — versi baru yang menaruh pendatang telat di ekor
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
-Buat `supabase/migrations/0004_giliran.sql`:
+Buat `supabase/migrations/0005_giliran.sql`. Empat hal berbeda dari cuplikan
+awal rencana, dan dua di antaranya memperbaiki cacat yang nyata:
 
-```sql
--- Pembantu bersama: siapa pemilik giliran nomor sekian di sebuah room.
-create or replace function public.pemilik_giliran(p_room_id uuid, p_nomor int)
-returns uuid
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select p.id
-    from public.participants p
-   where p.room_id = p_room_id and p.urutan_giliran is not null
-   order by p.urutan_giliran
-  offset (
-    p_nomor % greatest(
-      (select count(*) from public.participants
-        where room_id = p_room_id and urutan_giliran is not null), 1)
-  )
-   limit 1;
-$$;
+1. **`set search_path = public, extensions`.** Sama seperti di Potongan 3:
+   `pgcrypto` dipasang Supabase di skema `extensions`, dan `masuk_room`
+   memanggil `gen_random_bytes`. Dengan `public` saja fungsi itu tidak
+   ditemukan.
 
-create or replace function public.mulai_sesi(p_kode text, p_host_token text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-begin
-  select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
-  if not found then
-    raise exception 'room tidak ditemukan';
-  end if;
+2. **Cuplikan `masuk_room` di rencana mengulang bug ambiguitas dari Potongan 2.**
+   Klausa `returns table (room_id ...)` membuat `room_id` jadi variabel
+   keluaran, jadi `where room_id = v_room.id` ditolak Postgres karena acuan
+   kolomnya ambigu. Galat ini sudah pernah menjaring fungsi yang sama sekali,
+   dan cuplikan di rencana menuliskannya kembali. Semua kolom sekarang diawali
+   nama tabelnya.
 
-  if not exists (select 1 from public.room_secrets
-                  where room_id = v_room.id and host_token = p_host_token) then
-    raise exception 'hanya host yang boleh memulai sesi';
-  end if;
+3. **Semua `raise exception` berbahasa Inggris**, karena pesannya ikut tampil
+   di layar peserta.
 
-  if v_room.status <> 'lobby' then
-    raise exception 'sesi sudah dimulai';
-  end if;
+4. **Pelanggaran batasan unik ditangkap**, meneruskan keputusan Potongan 3.
+   Di potongan ini penangkapnya justru lebih sering terpakai: karena
+   `putar_roda` tidak lagi menambah nomor giliran, penekanan kedua di giliran
+   yang sama langsung menabrak batasannya.
 
-  -- Pengacakan terjadi tepat sekali, di sini. Setelah ini urutannya tetap.
-  with acak as (
-    select id, (row_number() over (order by random())) - 1 as urutan
-      from public.participants
-     where room_id = v_room.id
-  )
-  update public.participants p
-     set urutan_giliran = a.urutan
-    from acak a
-   where p.id = a.id;
-
-  update public.rooms
-     set status = 'berjalan', nomor_giliran_sekarang = 0
-   where id = v_room.id;
-end;
-$$;
-
-create or replace function public.giliran_berikutnya(p_kode text, p_host_token text)
-returns int
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-  v_baru int;
-begin
-  select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
-  if not found then
-    raise exception 'room tidak ditemukan';
-  end if;
-
-  if not exists (select 1 from public.room_secrets
-                  where room_id = v_room.id and host_token = p_host_token) then
-    raise exception 'hanya host yang boleh memindah giliran';
-  end if;
-
-  if v_room.status <> 'berjalan' then
-    raise exception 'sesi belum berjalan';
-  end if;
-
-  v_baru := v_room.nomor_giliran_sekarang + 1;
-  update public.rooms set nomor_giliran_sekarang = v_baru where id = v_room.id;
-  return v_baru;
-end;
-$$;
-
--- Menggantikan versi Potongan 3. Dua perubahan yang disengaja:
--- (1) kepemilikan giliran sekarang ditegakkan, (2) fungsi ini TIDAK lagi
--- menambah nomor giliran — itu jadi tugas giliran_berikutnya milik host,
--- supaya obrolan boleh melebar tanpa dikejar aplikasi.
-drop function if exists public.putar_roda(text, text);
-
-create or replace function public.putar_roda(
-  p_kode text,
-  p_token text,
-  p_host_token text
-)
-returns table (
-  room_question_id uuid,
-  teks text,
-  nomor_giliran int,
-  benih_animasi int
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-  v_pemanggil uuid;
-  v_pemilik uuid;
-  v_adalah_host boolean := false;
-  v_pertanyaan public.room_questions%rowtype;
-  v_benih int;
-begin
-  select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
-  if not found then
-    raise exception 'room tidak ditemukan';
-  end if;
-
-  if v_room.status <> 'berjalan' then
-    raise exception 'sesi belum berjalan';
-  end if;
-
-  select p.id into v_pemanggil
-    from public.participants p
-    join public.participant_secrets s on s.participant_id = p.id
-   where p.room_id = v_room.id and s.token = p_token;
-  if not found then
-    raise exception 'kamu bukan peserta room ini';
-  end if;
-
-  v_adalah_host := p_host_token is not null and exists (
-    select 1 from public.room_secrets
-     where room_id = v_room.id and host_token = p_host_token);
-
-  v_pemilik := public.pemilik_giliran(v_room.id, v_room.nomor_giliran_sekarang);
-
-  if not v_adalah_host and v_pemanggil is distinct from v_pemilik then
-    raise exception 'sekarang bukan giliranmu';
-  end if;
-
-  select * into v_pertanyaan
-    from public.room_questions
-   where room_id = v_room.id
-   order by random()
-   limit 1;
-  if not found then
-    raise exception 'kolam pertanyaan kosong';
-  end if;
-
-  v_benih := floor(random() * 1000)::int;
-
-  -- Batasan unik (room_id, nomor_giliran) yang menolak putaran kedua.
-  insert into public.spins (
-    room_id, participant_id, room_question_id, nomor_giliran, benih_animasi
-  ) values (
-    v_room.id, coalesce(v_pemilik, v_pemanggil), v_pertanyaan.id,
-    v_room.nomor_giliran_sekarang, v_benih
-  );
-
-  update public.room_questions set sudah_keluar = true
-   where id = v_pertanyaan.id;
-
-  return query select v_pertanyaan.id, v_pertanyaan.teks,
-                      v_room.nomor_giliran_sekarang, v_benih;
-end;
-$$;
-
--- Menggantikan versi Potongan 2: pendatang yang telat sekarang mendapat
--- urutan giliran di ekor, bukan dibiarkan kosong.
-create or replace function public.masuk_room(p_kode text, p_nama text)
-returns table (
-  room_id uuid,
-  participant_id uuid,
-  participant_token text
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-  v_participant_id uuid;
-  v_token text;
-  v_urutan int;
-begin
-  if p_nama is null or length(trim(p_nama)) = 0
-     or length(trim(p_nama)) > 20 then
-    raise exception 'nama tidak sah';
-  end if;
-
-  select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
-  if not found then
-    raise exception 'room tidak ditemukan';
-  end if;
-
-  if v_room.status = 'selesai' then
-    raise exception 'sesi sudah selesai';
-  end if;
-
-  if v_room.status = 'berjalan' and not v_room.opsi_izinkan_join_telat then
-    raise exception 'sesi sudah dimulai dan ditutup untuk peserta baru';
-  end if;
-
-  if exists (select 1 from public.participants
-              where room_id = v_room.id and nama = trim(p_nama)) then
-    raise exception 'nama sudah dipakai di room ini';
-  end if;
-
-  if v_room.status = 'berjalan' then
-    select coalesce(max(urutan_giliran), -1) + 1 into v_urutan
-      from public.participants where room_id = v_room.id;
-  else
-    v_urutan := null;
-  end if;
-
-  v_token := encode(gen_random_bytes(24), 'hex');
-
-  insert into public.participants (room_id, nama, urutan_giliran)
-    values (v_room.id, trim(p_nama), v_urutan)
-    returning id into v_participant_id;
-  insert into public.participant_secrets (participant_id, token)
-    values (v_participant_id, v_token);
-
-  return query select v_room.id, v_participant_id, v_token;
-end;
-$$;
-
-grant execute on function public.mulai_sesi(text, text) to anon;
-grant execute on function public.giliran_berikutnya(text, text) to anon;
-grant execute on function public.putar_roda(text, text, text) to anon;
-grant execute on function public.masuk_room(text, text) to anon;
-```
-
-- [ ] **Step 2: Terapkan dan verifikasi alur lengkap di SQL Editor**
-
-```sql
-select * from public.buat_room('Juan', array['A?', 'B?', 'C?']);
--- catat kode, host_token, participant_token
-select * from public.masuk_room('KODE', 'Budi');
-select public.mulai_sesi('KODE', 'HOST_TOKEN');
-select urutan_giliran, nama from public.participants
- where room_id = (select id from public.rooms where kode = 'KODE')
- order by urutan_giliran;
-```
-
-Expected: kedua peserta punya `urutan_giliran` 0 dan 1 dalam urutan acak, dan status room jadi `berjalan`.
-
-- [ ] **Step 3: Verifikasi penguncian giliran benar-benar menolak**
-
-Cari tahu siapa pemilik giliran 0, lalu panggil `putar_roda` dengan token peserta **yang bukan** pemiliknya, dan `p_host_token => null`:
-
-```sql
-select * from public.putar_roda('KODE', 'TOKEN_BUKAN_PEMILIK', null);
-```
-
-Expected: `sekarang bukan giliranmu`.
-
-- [ ] **Step 4: Verifikasi host boleh memutar mewakili**
-
-```sql
-select * from public.putar_roda('KODE', 'TOKEN_HOST', 'HOST_TOKEN');
-```
-
-Expected: berhasil. Lalu periksa bahwa putarannya dicatat atas nama **pemilik giliran**, bukan host:
-
-```sql
-select p.nama from public.spins s
-  join public.participants p on p.id = s.participant_id
- where s.room_id = (select id from public.rooms where kode = 'KODE')
- order by s.nomor_giliran desc limit 1;
-```
-
-Expected: nama pemilik giliran nomor 0.
-
-- [ ] **Step 5: Verifikasi pendatang telat masuk ke ekor**
-
-```sql
-select * from public.masuk_room('KODE', 'Citra');
-select nama, urutan_giliran from public.participants
- where room_id = (select id from public.rooms where kode = 'KODE')
- order by urutan_giliran;
-```
-
-Expected: Citra punya `urutan_giliran = 2`, yaitu terbesar.
-
-- [ ] **Step 6: Commit**
+- [x] **Step 2: Terapkan dan verifikasi alur lengkap**
 
 ```bash
-git add supabase/migrations/0004_giliran.sql
+set -a; . ./.env.local; set +a
+pnpm dlx supabase@latest db push --linked
+node scripts/verifikasi-giliran.mjs
+```
+
+Rencana awal menyuruh menempelkan tujuh potong SQL ke SQL Editor dan membaca
+hasilnya sendiri. Diganti `scripts/verifikasi-giliran.mjs`, yang menempuh jalur
+anon yang sama dengan browser dan bisa diulang kapan saja.
+
+Hasil: **16 lulus, 0 gagal.**
+
+| Yang diperiksa | Hasil |
+|---|---|
+| Roda terkunci sebelum sesi dimulai | `This session has not started yet.` |
+| Peserta biasa tidak boleh memulai sesi | `Only the host can start the session.` |
+| Tiga peserta dapat urutan giliran 0, 1, 2 | `Budi:0, Juan:1, Citra:2` |
+| Status room jadi `berjalan` di giliran 0 | ya |
+| Sesi tidak bisa dimulai dua kali | `This session has already started.` |
+| Peserta bukan pemilik giliran ditolak | `It is not your turn yet.` |
+| Host boleh memutar mewakili | berhasil di giliran 0 |
+| Putaran dicatat atas nama pemilik giliran | tercatat `Budi`, bukan host |
+| Memutar roda tidak memindah giliran | nomor giliran tetap 0 |
+| Giliran yang sudah punya pertanyaan ditolak | `This turn already has its question.` |
+| Peserta biasa tidak boleh memindah giliran | `Only the host can move to the next turn.` |
+| Host memindah giliran | ke 1 |
+| Pemilik giliran berikutnya boleh memutar sendiri | berhasil, tanpa host token |
+| Pendatang telat ke ekor | `Dodi:3`, terbesar |
+| Urutan peserta lama tidak bergeser | ya |
+| Pengacakan benar-benar acak | 6 urutan berbeda dari 6 room |
+
+- [x] **Step 3: Sesuaikan skrip verifikasi Potongan 3**
+
+`scripts/verifikasi-putaran.mjs` memanggil `putar_roda` dua argumen dan memutar
+roda dari ruang tunggu — keduanya tidak berlaku lagi. Skripnya diperbarui:
+memanggil `mulai_sesi` dulu, dan mengirim `p_host_token`.
+
+Satu uji di dalamnya berubah arti dan jadi jauh lebih berguna. Di Potongan 3
+tiga penekanan bersamaan selalu berbaris rapi dan masing-masing dapat nomor
+gilirannya sendiri, jadi kuncinya tidak pernah tersentuh. Sekarang
+`putar_roda` tidak menambah nomor giliran sendiri, sehingga ketiganya benar-
+benar mengincar nomor yang sama:
+
+```
+OK  tiga penekanan bersamaan menghasilkan tepat satu pertanyaan — 1 berhasil, 2 ditolak
+OK  yang kalah dapat kalimat yang bisa dibaca, bukan galat mentah
+    — "This turn already has its question." | "It is not your turn yet."
+```
+
+Tabrakan yang dipaksa lewat Management API tidak dibutuhkan lagi dan dibuang.
+
+- [x] **Step 4: Catatan — Realtime meleset sekali sesudah setiap `db push`**
+
+Terjadi dua kali dengan pola yang sama: jalan pertama sesudah migrasi
+diterapkan tidak menerima satu pun siaran dalam 15 detik, lalu semua jalan
+berikutnya lulus dalam 377–597 ms. Perubahan skema tampaknya membuat layanan
+Realtime perlu menyusun ulang keadaannya sebentar.
+
+Ini artefak saat deploy, bukan saat sesi: tidak ada perubahan skema yang
+terjadi di tengah sesi fellowship. Yang perlu diingat cuma satu — **jangan
+percaya jalan pertama sesudah `db push`; ulangi sekali.**
+
+- [x] **Step 5: Commit**
+
+```bash
+git add supabase/migrations/0005_giliran.sql scripts/verifikasi-giliran.mjs scripts/verifikasi-putaran.mjs
 git commit -m "feat: pengacakan urutan, penguncian giliran, dan ekor antrean"
 ```
 
