@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   bacaIdentitas,
   hapusIdentitas,
+  identitasMasihSah,
   simpanIdentitas,
   type Identitas,
 } from '@/lib/identitas'
@@ -54,5 +55,23 @@ describe('identitas', () => {
     simpanIdentitas('AB2CD', contoh, penyimpanan)
     hapusIdentitas('AB2CD', penyimpanan)
     expect(bacaIdentitas('AB2CD', penyimpanan)).toBeNull()
+  })
+})
+
+describe('identitasMasihSah', () => {
+  it('sah saat id pesertanya masih ada di daftar', () => {
+    expect(identitasMasihSah(contoh, ['p-9', 'p-1'])).toBe(true)
+  })
+
+  it('tidak sah saat pesertanya sudah tidak ada', () => {
+    expect(identitasMasihSah(contoh, ['p-9'])).toBe(false)
+  })
+
+  it('tidak sah saat daftarnya kosong', () => {
+    expect(identitasMasihSah(contoh, [])).toBe(false)
+  })
+
+  it('tidak sah saat belum ada identitas sama sekali', () => {
+    expect(identitasMasihSah(null, ['p-1'])).toBe(false)
   })
 })

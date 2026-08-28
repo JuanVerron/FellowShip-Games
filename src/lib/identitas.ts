@@ -72,3 +72,16 @@ export function hapusIdentitas(
     // menghentikan sesi.
   }
 }
+
+/**
+ * Identitas tersimpan bisa basi: room-nya sudah kedaluwarsa lalu dibuat ulang
+ * dengan kode yang sama, atau pesertanya sudah tidak ada. Kalau id-nya tidak
+ * lagi ada di daftar peserta, identitas itu harus dibuang — kalau tidak,
+ * orangnya terjebak selamanya di room yang menganggapnya bukan siapa-siapa.
+ */
+export function identitasMasihSah(
+  identitas: Identitas | null,
+  idPesertaSekarang: readonly string[],
+): boolean {
+  return identitas !== null && idPesertaSekarang.includes(identitas.participantId)
+}

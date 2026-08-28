@@ -2,7 +2,12 @@
 
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useRoom } from '@/hooks/useRoom'
-import { bacaIdentitas, kunciIdentitas } from '@/lib/identitas'
+import {
+  bacaIdentitas,
+  hapusIdentitas,
+  identitasMasihSah,
+  kunciIdentitas,
+} from '@/lib/identitas'
 
 const WARNA_STATUS = {
   tersambung: 'bg-green-500',
@@ -61,6 +66,16 @@ export default function RuangTunggu({
     [identitasMentah, kodeBesar],
   )
 
+  // Identitas yang menunjuk ke peserta yang sudah tidak ada dibuang, supaya
+  // orangnya bisa masuk lagi sebagai peserta baru alih-alih terjebak di room
+  // yang menganggapnya bukan siapa-siapa.
+  useEffect(() => {
+    if (memuat || peserta.length === 0 || identitas === null) return
+    if (!identitasMasihSah(identitas, peserta.map((o) => o.id))) {
+      hapusIdentitas(kodeBesar)
+    }
+  }, [memuat, peserta, identitas, kodeBesar])
+
   const [sekarang, setSekarang] = useState(() => Date.now())
   useEffect(() => {
     const pewaktu = setInterval(() => setSekarang(Date.now()), 1000)
@@ -100,25 +115,23 @@ export default function RuangTunggu({
                 aria-current={iniKamu ? 'true' : undefined}
                 className={
                   iniKamu
-                    ? 'flex min-h-[44px] items-center justify-between rounded-lg border-2 border-blue-600 bg-blue-600/10 px-3 font-semibold dark:border-blue-400 dark:bg-blue-400/10'
-                    : 'flex min-h-[44px] items-center justify-between rounded-lg border px-3'
+                    ? 'flex min-h-[44px] items-center justify-between gap-2 rounded-lg border-2 border-amber-500 bg-amber-500/10 px-3 font-semibold'
+                    : 'flex min-h-[44px] items-center justify-between gap-2 rounded-lg border px-3'
                 }
               >
-                <span>{orang.nama}</span>
-                {/* 'You' ditaruh paling akhir supaya dialah yang mentok ke tepi
-                    kanan. Sebelumnya 'host' yang di ujung dan pilnya terdorong
-                    ke tengah, sehingga penanda terpenting justru paling tidak
-                    menonjol. */}
-                <span className="flex shrink-0 items-center gap-2">
-                  {orang.adalahHost && (
-                    <span className="text-xs font-normal opacity-60">host</span>
-                  )}
+                <span className="flex min-w-0 items-baseline gap-1.5">
+                  <span className="truncate">{orang.nama}</span>
                   {iniKamu && (
-                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white dark:bg-blue-400 dark:text-black">
-                      You
+                    <span className="shrink-0 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                      (you)
                     </span>
                   )}
                 </span>
+                {orang.adalahHost && (
+                  <span className="shrink-0 text-xs font-normal opacity-60">
+                    host
+                  </span>
+                )}
               </li>
             )
           })}
