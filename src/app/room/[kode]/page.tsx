@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Roda } from '@/components/Roda'
 import { TautanBeranda } from '@/components/TautanBeranda'
+import { Tombol, TautanTombol } from '@/components/Tombol'
 import { useRoom } from '@/hooks/useRoom'
 import { bolehMemutar, pemilikGiliran, pesertaTerurut } from '@/lib/giliran'
 import {
@@ -17,9 +17,9 @@ import type { Peserta } from '@/lib/room'
 import { giliranBerikutnya, mulaiSesi } from '@/lib/sesi'
 
 const WARNA_STATUS = {
-  tersambung: 'bg-green-500',
-  menyambung: 'bg-amber-500',
-  terputus: 'bg-red-500',
+  tersambung: 'bg-hidup',
+  menyambung: 'bg-menunggu',
+  terputus: 'bg-putus',
 } as const
 
 const TEKS_STATUS = {
@@ -135,7 +135,9 @@ export default function HalamanRoom({
     return (
       <main className="mx-auto flex max-w-md flex-col p-6">
         <TautanBeranda />
-        <p className="mt-4 text-red-600">{galat ?? 'Room not found'}</p>
+        <p className="mt-4 rounded-[var(--radius)] bg-bahaya-lembut px-3 py-2 text-bahaya">
+          {galat ?? 'Room not found'}
+        </p>
       </main>
     )
   }
@@ -143,7 +145,7 @@ export default function HalamanRoom({
   const usia = usiaDetik(diperbaruiPada, sekarang)
 
   const penunjukStatus = (
-    <p role="status" className="mt-auto flex items-center gap-2 text-xs opacity-70">
+    <p role="status" className="mt-auto flex items-center gap-2 pt-2 text-xs text-teks-redup">
       <span
         className={`inline-block h-2 w-2 shrink-0 rounded-full ${WARNA_STATUS[statusSaluran]}`}
         aria-hidden
@@ -155,32 +157,49 @@ export default function HalamanRoom({
     </p>
   )
 
-  function barisPeserta(orang: Peserta, nomor?: number, redup = false) {
+  function barisPeserta(
+    orang: Peserta,
+    nomor?: number,
+    giliranSekarang: boolean | null = null,
+  ) {
     const iniKamu = identitas?.participantId === orang.id
-    const dasar = 'flex min-h-[44px] items-center justify-between gap-2 rounded-lg px-3'
+    const dasar =
+      'flex min-h-[48px] items-center justify-between gap-2 rounded-[var(--radius)] border-2 px-3'
     const rupa = iniKamu
-      ? `${dasar} border-2 border-amber-500 bg-amber-500/10 font-semibold`
-      : `${dasar} border`
+      ? `${dasar} border-aksi-garis bg-aksi-lembut font-semibold`
+      : `${dasar} border-garis bg-permukaan`
     return (
       <li
         key={orang.id}
-        aria-current={iniKamu ? 'true' : undefined}
-        className={redup ? `${rupa} opacity-60` : rupa}
+        aria-current={giliranSekarang ? 'step' : undefined}
+        className={giliranSekarang === false ? `${rupa} text-teks-redup` : rupa}
       >
         <span className="flex min-w-0 items-baseline gap-1.5">
           {nomor !== undefined && (
-            <span className="shrink-0 tabular-nums opacity-50">{nomor}.</span>
+            <span className="shrink-0 tabular-nums text-teks-redup">{nomor}.</span>
           )}
           <span className="truncate">{orang.nama}</span>
           {iniKamu && (
-            <span className="shrink-0 text-xs font-semibold text-amber-600 dark:text-amber-400">
+            <span className="shrink-0 text-xs font-semibold text-aksi-garis">
               (you)
             </span>
           )}
         </span>
-        {orang.adalahHost && (
-          <span className="shrink-0 text-xs font-normal opacity-60">host</span>
-        )}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {/* Giliran sekarang tidak boleh ditandai warna saja. Kata "now"
+              membuatnya terbaca juga oleh orang yang tidak membedakan warna,
+              dan oleh pembaca layar lewat aria-current. */}
+          {giliranSekarang && (
+            <span className="rounded-full bg-aksi px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-aksi-teks">
+              now
+            </span>
+          )}
+          {orang.adalahHost && (
+            <span className="rounded-full border border-garis px-2 py-0.5 text-[11px] font-medium text-teks-redup">
+              host
+            </span>
+          )}
+        </span>
       </li>
     )
   }
@@ -192,44 +211,48 @@ export default function HalamanRoom({
         <TautanBeranda />
 
         <div className="text-center">
-          <p className="text-sm opacity-70">Room code</p>
-          <p className="font-mono text-5xl font-bold tracking-[0.3em]">{room.kode}</p>
-          <p className="mt-2 text-sm opacity-70">Share this code with your friends</p>
+          <p className="text-sm text-teks-redup">Room code</p>
+          <p className="mt-1 font-mono text-5xl font-bold tracking-[0.3em] text-aksi-garis">
+            {room.kode}
+          </p>
+          <p className="mt-2 text-sm text-teks-redup">Share this code with your friends</p>
         </div>
 
         <div>
-          <h2 className="mb-3 font-semibold">Participants ({peserta.length})</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-teks-redup">
+            Participants ({peserta.length})
+          </h2>
           <ul className="flex flex-col gap-2">
             {peserta.map((orang) => barisPeserta(orang))}
           </ul>
         </div>
 
         {pesanGalat && (
-          <p role="alert" className="text-sm text-red-600">
+          <p
+            role="alert"
+            className="rounded-[var(--radius)] bg-bahaya-lembut px-3 py-2 text-sm text-bahaya"
+          >
             {pesanGalat}
           </p>
         )}
 
         {adalahHost ? (
-          <button
+          <Tombol
             type="button"
+            ukuran="besar"
             disabled={sibuk}
             onClick={() => jalankan(() => mulaiSesi(kodeBesar, hostToken))}
-            className="min-h-[56px] rounded-xl bg-black text-lg font-bold text-white disabled:opacity-40 dark:bg-white dark:text-black"
           >
             {sibuk ? 'Starting…' : 'Start session'}
-          </button>
+          </Tombol>
         ) : identitas ? (
-          <p className="text-center text-sm opacity-70">
+          <p className="rounded-[var(--radius)] border-2 border-dashed border-garis px-4 py-5 text-center text-sm text-teks-redup">
             Waiting for the host to start…
           </p>
         ) : (
-          <Link
-            href="/masuk"
-            className="flex min-h-[56px] items-center justify-center rounded-xl border-2 text-lg font-semibold"
-          >
+          <TautanTombol href="/masuk" varian="kedua" ukuran="besar">
             Join this room
-          </Link>
+          </TautanTombol>
         )}
 
         {penunjukStatus}
@@ -275,21 +298,21 @@ export default function HalamanRoom({
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 p-6">
       <div className="flex items-center justify-between gap-2">
         <TautanBeranda />
-        <p className="font-mono text-sm tracking-[0.2em] opacity-60">{room.kode}</p>
+        <p className="font-mono text-sm tracking-[0.2em] text-teks-redup">{room.kode}</p>
       </div>
 
       <div
-        className={`rounded-2xl p-4 text-center ${
+        className={`rounded-[var(--radius)] border-2 p-4 text-center ${
           giliranku
-            ? 'bg-amber-500 text-black'
-            : 'border-2'
+            ? 'border-aksi-garis bg-aksi text-aksi-teks'
+            : 'border-garis bg-permukaan'
         }`}
       >
         {giliranku ? (
           <p className="text-2xl font-bold">Your turn!</p>
         ) : (
-          <p className="text-lg">
-            <span className="font-bold">{pemilik?.nama ?? '—'}</span>
+          <p className="text-lg text-teks-redup">
+            <span className="font-bold text-teks">{pemilik?.nama ?? '—'}</span>
             {pemilik ? "'s turn" : ' nobody yet'}
           </p>
         )}
@@ -303,34 +326,34 @@ export default function HalamanRoom({
       />
 
       {identitas ? (
-        <button
+        <Tombol
           type="button"
+          ukuran="besar"
           disabled={sibuk || !bolehTekan || giliranIniSudahDiputar}
           onClick={() =>
             jalankan(() => putarRoda(kodeBesar, identitas.token, hostToken))
           }
-          className="min-h-[72px] rounded-2xl bg-black text-xl font-bold tracking-wide text-white disabled:opacity-40 dark:bg-white dark:text-black"
         >
           {labelPutar()}
-        </button>
+        </Tombol>
       ) : (
-        <Link
-          href="/masuk"
-          className="flex min-h-[72px] items-center justify-center rounded-2xl border-2 text-lg font-semibold"
-        >
+        <TautanTombol href="/masuk" varian="kedua" ukuran="besar">
           Join this room to play
-        </Link>
+        </TautanTombol>
       )}
 
       {pesanGalat && (
-        <p role="alert" className="text-center text-sm text-red-600">
+        <p
+          role="alert"
+          className="rounded-[var(--radius)] bg-bahaya-lembut px-3 py-2 text-center text-sm text-bahaya"
+        >
           {pesanGalat}
         </p>
       )}
 
       {putaran && (
-        <div className="rounded-2xl border-2 p-5">
-          <p className="text-xs uppercase tracking-wide opacity-60">
+        <div className="rounded-[var(--radius)] border-2 border-garis bg-permukaan p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-aksi-garis">
             Question #{putaran.nomorGiliran + 1}
           </p>
           <p className="mt-2 text-2xl font-semibold leading-snug">{putaran.teks}</p>
@@ -338,23 +361,23 @@ export default function HalamanRoom({
       )}
 
       {adalahHost && (
-        <button
+        <Tombol
           type="button"
+          varian="kedua"
           disabled={sibuk}
           onClick={() => jalankan(() => giliranBerikutnya(kodeBesar, hostToken))}
-          className="min-h-[52px] rounded-xl border-2 font-semibold disabled:opacity-40"
         >
           Next turn →
-        </button>
+        </Tombol>
       )}
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold opacity-70">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-teks-redup">
           Up next ({antrean.length})
         </h2>
         <ul className="flex flex-col gap-2">
           {antrean.map((orang, i) =>
-            barisPeserta(orang, i + 1, orang.id !== pemilik?.id),
+            barisPeserta(orang, i + 1, orang.id === pemilik?.id),
           )}
         </ul>
       </div>

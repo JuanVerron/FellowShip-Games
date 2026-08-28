@@ -1,26 +1,20 @@
-import Link from 'next/link'
+import { TautanTombol } from '@/components/Tombol'
 
 export default function Beranda() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 p-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-10 p-6">
       <div>
-        <h1 className="text-4xl font-bold">Fellowship Games</h1>
-        <p className="mt-2 opacity-70">Question bank roulette</p>
+        <h1 className="text-4xl font-bold tracking-tight">Fellowship Games</h1>
+        <p className="mt-2 text-teks-redup">Question bank roulette</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        <Link
-          href="/buat"
-          className="flex min-h-[52px] items-center justify-center rounded-xl bg-black px-4 font-semibold text-white dark:bg-white dark:text-black"
-        >
+        <TautanTombol href="/buat" ukuran="besar">
           Create Room
-        </Link>
-        <Link
-          href="/masuk"
-          className="flex min-h-[52px] items-center justify-center rounded-xl border-2 px-4 font-semibold"
-        >
+        </TautanTombol>
+        <TautanTombol href="/masuk" varian="kedua" ukuran="besar">
           Join Room
-        </Link>
+        </TautanTombol>
       </div>
     </main>
   )

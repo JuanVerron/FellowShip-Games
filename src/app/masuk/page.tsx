@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { TautanBeranda } from '@/components/TautanBeranda'
+import { Tombol } from '@/components/Tombol'
 import { bacaIdentitas, kunciIdentitas, simpanIdentitas } from '@/lib/identitas'
 import { kodeValid, normalisasiKode } from '@/lib/kode'
 import { namaValid, rapikanNama } from '@/lib/nama'
@@ -82,18 +83,18 @@ export default function MasukRoom() {
 
         <form onSubmit={kirim} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm opacity-70">Room code</span>
+            <span className="text-sm text-teks-redup">Room code</span>
             <input
               value={kode}
               onChange={(e) => setKode(normalisasiKode(e.target.value))}
               autoCapitalize="characters"
               autoFocus
-              className="min-h-[56px] rounded-lg border-2 px-3 text-center font-mono text-3xl tracking-[0.3em]"
+              className="min-h-[60px] rounded-[var(--radius)] border-2 border-garis-kuat bg-permukaan px-3 text-center font-mono text-3xl tracking-[0.3em] text-teks transition-colors focus:border-aksi-garis"
             />
           </label>
 
           {identitasTersimpan ? (
-            <p className="rounded-lg border-2 border-amber-500 bg-amber-500/10 px-3 py-2 text-sm">
+            <p className="rounded-[var(--radius)] border-2 border-aksi-garis bg-aksi-lembut px-3 py-2 text-sm">
               You already joined this room as{' '}
               <span className="font-semibold">{identitasTersimpan.nama}</span>
               {identitasTersimpan.hostToken && ' (host)'}. You will continue as the
@@ -101,29 +102,32 @@ export default function MasukRoom() {
             </p>
           ) : (
             <label className="flex flex-col gap-2">
-              <span className="text-sm opacity-70">Your name</span>
+              <span className="text-sm text-teks-redup">Your name</span>
               <input
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
                 maxLength={20}
-                className="min-h-[48px] rounded-lg border-2 px-3 text-lg"
+                className="min-h-[52px] rounded-[var(--radius)] border-2 border-garis-kuat bg-permukaan px-3 text-lg text-teks transition-colors focus:border-aksi-garis"
               />
             </label>
           )}
 
-          {galat && <p className="text-sm text-red-600">{galat}</p>}
+          {galat && (
+            <p
+              role="alert"
+              className="rounded-[var(--radius)] bg-bahaya-lembut px-3 py-2 text-sm text-bahaya"
+            >
+              {galat}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={mengirim}
-            className="min-h-[52px] rounded-xl bg-black font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
-          >
+          <Tombol type="submit" disabled={mengirim} ukuran="besar">
             {mengirim
               ? 'Joining…'
               : identitasTersimpan
                 ? `Continue as ${identitasTersimpan.nama}`
                 : 'Join'}
-          </button>
+          </Tombol>
         </form>
       </div>
     </main>

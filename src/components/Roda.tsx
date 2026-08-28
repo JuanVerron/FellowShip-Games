@@ -36,7 +36,7 @@ export function Roda({
 
   if (daftar.length === 0) {
     return (
-      <p className="py-10 text-center opacity-60">This room has no questions.</p>
+      <p className="py-10 text-center text-teks-redup">This room has no questions.</p>
     )
   }
 
@@ -57,13 +57,13 @@ export function Roda({
     <div className="relative mx-auto aspect-square w-full max-w-[320px]">
       <div
         aria-hidden
-        className="absolute left-1/2 top-[-10px] z-10 -translate-x-1/2 text-3xl leading-none drop-shadow"
+        className="absolute left-1/2 top-[-10px] z-10 -translate-x-1/2 text-3xl leading-none text-teks drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
       >
         ▼
       </div>
 
       <div
-        className={`h-full w-full overflow-hidden rounded-full border-4 border-black/10 dark:border-white/20${
+        className={`h-full w-full overflow-hidden rounded-full border-4 border-garis${
           beranimasi
             ? ' motion-safe:transition-transform motion-safe:duration-[4000ms] motion-safe:ease-out'
             : ''
@@ -111,7 +111,7 @@ export function Roda({
         })}
       </div>
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow dark:bg-neutral-900" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-garis bg-latar" />
     </div>
   )
 }

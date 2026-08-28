@@ -9,7 +9,7 @@ export function TautanBeranda() {
   return (
     <Link
       href="/"
-      className="-ml-2 inline-flex min-h-[44px] shrink-0 items-center gap-1.5 self-start px-2 text-sm opacity-70"
+      className="-ml-2 inline-flex min-h-[44px] shrink-0 items-center gap-1.5 self-start rounded-lg px-2 text-sm text-teks-redup transition-colors hover:text-teks"
     >
       <span aria-hidden>&larr;</span>
       Home
