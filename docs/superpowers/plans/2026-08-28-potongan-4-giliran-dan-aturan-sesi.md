@@ -32,6 +32,8 @@
 |---|---|
 | `supabase/migrations/0005_giliran.sql` | Fungsi `pemilik_giliran`, `mulai_sesi`, `giliran_berikutnya`, serta versi baru `putar_roda` dan `masuk_room` |
 | `scripts/verifikasi-giliran.mjs` | Verifikasi seluruh alur giliran lewat jalur anon yang sama dengan browser |
+| `supabase/migrations/0006_opsi_room.sql` | Fungsi `ubah_opsi_join_telat` milik host |
+| `src/components/Sakelar.tsx` | Sakelar opsi room, dibangun di atas checkbox sungguhan |
 | `src/lib/giliran.ts` | Menghitung siapa pemilik giliran dan siapa yang boleh memutar. Murni, tanpa I/O |
 | `src/lib/sesi.ts` | Pembungkus RPC `mulai_sesi` dan `giliran_berikutnya` |
 | `src/lib/putaran.ts` | Diperluas: `putarRoda` menerima `hostToken` opsional |
@@ -388,6 +390,83 @@ pnpm dlx vercel@latest --prod
 
 ---
 
+### Task 4: Sakelar izinkan bergabung setelah mulai
+
+> **Task tambahan, di luar rencana semula.** PRD bagian 10 menaruh opsi ini di
+> Potongan 4, tapi rencana ini tidak pernah mencantumkannya — jadi kolomnya
+> ditegakkan `masuk_room` sejak Task 1 sementara nilainya terkunci di bawaan
+> `true` selamanya. Ketahuan saat Juan bertanya kenapa layar Buat Room cuma
+> meminta nama. Task ini yang menutupnya.
+
+**Files:**
+- Create: `supabase/migrations/0006_opsi_room.sql`
+- Create: `src/components/Sakelar.tsx`
+- Modify: `src/lib/sesi.ts`, `src/app/room/[kode]/page.tsx`, `scripts/verifikasi-giliran.mjs`
+
+**Interfaces:**
+- Produces:
+  - `public.ubah_opsi_join_telat(p_kode text, p_host_token text, p_izinkan boolean)` → `boolean`
+  - `ubahOpsiJoinTelat(kode, hostToken, izinkan): Promise<boolean>`
+  - Komponen `<Sakelar judul keterangan nyala onUbah disabled />`
+
+- [x] **Step 1: Fungsi database**
+
+`ubah_opsi_join_telat` memeriksa `host_token` di `room_secrets`, menolak room
+yang sudah selesai, lalu menulis `opsi_izinkan_join_telat`. Hanya satu opsi
+yang dibuka. `opsi_buang_terpakai` sengaja ditinggal: ia baru berarti bersama
+penghitung sisa dan layar sesi selesai, dan keduanya milik Potongan 5.
+
+- [x] **Step 2: Komponen sakelar**
+
+`src/components/Sakelar.tsx`. Yang digambar cuma jalur dan bulatannya; yang
+menerima sentuhan, papan ketik, dan pembaca layar tetap `input type="checkbox"`
+sungguhan. Sakelar yang dibuat dari `div` plus `onClick` terlihat sama tapi
+tidak bisa ditekan spasi dan tidak mengumumkan keadaannya.
+
+Satu jebakan CSS yang sempat menjaring: `peer-checked:` hanya sampai ke
+**saudara** dari input. Bulatan sakelar adalah anak dari jalurnya, bukan
+saudara dari input, jadi keadaannya diteruskan lewat pemilih anak
+`peer-checked:[&>span]:…`. Tanpa itu sakelarnya berubah warna tapi bulatannya
+tidak pernah bergeser.
+
+Keadaan tidak disampaikan lewat warna saja: posisi bulatan bergeser, dan
+kalimat penjelasnya ikut berubah — `Latecomers land at the end of the queue.`
+menjadi `The room locks the moment you start.`
+
+- [x] **Step 3: Pasang di ruang tunggu**
+
+> **Penempatannya berbeda dari PRD.** PRD bagian 3 menaruh opsi ini di bawah
+> "Buat Room". Yang dikerjakan: di ruang tunggu, terlihat hanya oleh host,
+> tepat di atas tombol Mulai. Alasannya ada di Catatan Perubahan `PRD.md`.
+
+- [x] **Step 4: Verifikasi**
+
+Empat pemeriksaan baru di `scripts/verifikasi-giliran.mjs`, seluruhnya lewat
+jalur anon yang sama dengan browser:
+
+| Yang diperiksa | Hasil |
+|---|---|
+| Peserta biasa tidak boleh mengubah opsi | `Only the host can change this setting.` |
+| Host mematikan opsinya | kolomnya jadi `false` |
+| Pendatang baru ditolak saat opsinya mati | `This session has already started and is closed to new people.` |
+| Pendatang baru diterima lagi saat dinyalakan | Eka masuk |
+
+Skrip penuh: **20 lulus, 0 gagal.**
+
+Di peramban: sakelar tampil di ruang tunggu host, dimatikan, kalimatnya
+berubah, dan nilainya benar-benar sampai ke database
+(`opsi_izinkan_join_telat: false` dibaca ulang lewat `scripts/sql.mjs`). Layar
+Budi yang bukan host tidak menampilkan sakelar maupun tombol apa pun.
+
+- [x] **Step 5: Commit**
+
+```bash
+git add -A
+git commit -m "feat: sakelar izinkan bergabung setelah sesi dimulai"
+```
+
+---
+
 ## Definisi Selesai Potongan 4
 
 1. **Terpenuhi.** `pnpm test` lulus 62 uji di 11 berkas; `pnpm build` dan
@@ -407,8 +486,11 @@ pnpm dlx vercel@latest --prod
    bergeser.
 6. **Terpenuhi.** Memutar roda tidak menyentuh `nomor_giliran_sekarang`; angka
    itu hanya berubah saat host memanggil `giliran_berikutnya`.
+7. **Terpenuhi.** Host punya sakelar "Allow joining after the start" di ruang
+   tunggu. Dimatikan, `masuk_room` menolak pendatang baru dengan kalimat yang
+   bisa dibaca; dinyalakan lagi, mereka diterima dan masuk ke ekor antrean.
 
-Seluruhnya diverifikasi lewat `node scripts/verifikasi-giliran.mjs` (16 lulus,
+Seluruhnya diverifikasi lewat `node scripts/verifikasi-giliran.mjs` (20 lulus,
 0 gagal), `node scripts/verifikasi-putaran.mjs` (11 lulus, 0 gagal), dan otomasi
 peramban di dua asal produksi.
 
@@ -423,7 +505,10 @@ peramban di dua asal produksi.
 3. **`usiaDetik` dijaga tidak pernah negatif.** Penunjuk status sempat menulis
    `updated -22s ago` karena pewaktu satu detiknya dilambatkan browser saat tab
    tidak di depan.
-4. **Label tombol dibedakan antara host dan peserta biasa.** Semula keduanya
+4. **Sakelar "izinkan bergabung setelah mulai" (Task 4).** PRD menaruhnya di
+   Potongan 4, rencana ini tidak pernah mencantumkannya. Kolomnya sudah
+   ditegakkan sejak Task 1 tapi nilainya terkunci di bawaan.
+5. **Label tombol dibedakan antara host dan peserta biasa.** Semula keduanya
    membaca `SPIN FOR CITRA`; untuk peserta biasa itu menjanjikan sesuatu yang
    cuma boleh dilakukan host, jadi ia jadi `WAITING FOR CITRA`.
 

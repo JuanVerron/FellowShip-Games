@@ -519,3 +519,7 @@ Terpengaruh: bagian 8 (Batasan operasional) dan bagian 10 (Potongan 1).
 **2026-08-28 — Ditegaskan: route penahan pause harus MENULIS, bukan membaca.**
 Terpengaruh: bagian 8 (Batasan operasional).
 *Alasan:* Supabase menghitung perubahan data sebagai aktivitas; permintaan baca saja belum tentu menahan project dari dipause. Kalau tidak ditulis eksplisit, pelaksana akan membuat endpoint `select` yang tampak bekerja tapi diam-diam gagal menahan pause, dan ketahuannya justru saat sesi mau mulai.
+
+**2026-08-29 — Opsi "izinkan bergabung setelah sesi dimulai" pindah dari layar Buat Room ke ruang tunggu.**
+Terpengaruh: bagian 3 (Peta Fitur) dan bagian 4.2 (Buat Room).
+*Alasan:* opsi ini baru berpengaruh sesudah host menekan Mulai, dan yang menentukan jawabannya adalah siapa yang sudah datang — informasi yang cuma ada di ruang tunggu, bukan di formulir pembuatan room. Menaruhnya di ruang tunggu juga membuatnya bisa diubah setelah sesi berjalan, yang berguna saat ternyata masih ada yang di jalan. Penempatannya tetap "sebelum permainan dimulai" seperti maksud semula: sakelarnya duduk tepat di atas tombol Mulai. Layar Buat Room di Potongan 5 tetap akan memegang opsi buang-terpakai dan pemilihan bank.

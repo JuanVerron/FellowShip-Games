@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Roda } from '@/components/Roda'
+import { Sakelar } from '@/components/Sakelar'
 import { TautanBeranda } from '@/components/TautanBeranda'
 import { Tombol, TautanTombol } from '@/components/Tombol'
 import { useRoom } from '@/hooks/useRoom'
@@ -14,7 +15,7 @@ import {
 } from '@/lib/identitas'
 import { putarRoda } from '@/lib/putaran'
 import type { Peserta } from '@/lib/room'
-import { giliranBerikutnya, mulaiSesi } from '@/lib/sesi'
+import { giliranBerikutnya, mulaiSesi, ubahOpsiJoinTelat } from '@/lib/sesi'
 
 const WARNA_STATUS = {
   tersambung: 'bg-hidup',
@@ -226,6 +227,22 @@ export default function HalamanRoom({
             {peserta.map((orang) => barisPeserta(orang))}
           </ul>
         </div>
+
+        {adalahHost && (
+          <Sakelar
+            judul="Allow joining after the start"
+            keterangan={
+              room.opsiIzinkanJoinTelat
+                ? 'Latecomers land at the end of the queue.'
+                : 'The room locks the moment you start.'
+            }
+            nyala={room.opsiIzinkanJoinTelat}
+            disabled={sibuk}
+            onUbah={(nyala) =>
+              jalankan(() => ubahOpsiJoinTelat(kodeBesar, hostToken, nyala))
+            }
+          />
+        )}
 
         {pesanGalat && (
           <p

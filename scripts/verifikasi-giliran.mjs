@@ -215,6 +215,53 @@ async function main() {
       JSON.stringify(antrean.map((o) => o.nama)),
   )
 
+  // --- Sakelar izinkan bergabung setelah mulai ---
+  const { error: eOpsiBukanHost } = await klien().rpc('ubah_opsi_join_telat', {
+    p_kode: kode,
+    p_host_token: 'bukan-host',
+    p_izinkan: false,
+  })
+  periksa(
+    'peserta biasa tidak boleh mengubah opsi room',
+    eOpsiBukanHost?.message === 'Only the host can change this setting.',
+    eOpsiBukanHost?.message ?? 'tidak ditolak',
+  )
+
+  const { error: eMatikan } = await a.rpc('ubah_opsi_join_telat', {
+    p_kode: kode,
+    p_host_token: hostToken,
+    p_izinkan: false,
+  })
+  const { data: roomTerkunci } = await klien()
+    .from('rooms').select('opsi_izinkan_join_telat').eq('id', roomId).single()
+  periksa(
+    'host mematikan opsi bergabung setelah mulai',
+    !eMatikan && roomTerkunci.opsi_izinkan_join_telat === false,
+    eMatikan?.message ?? `opsi jadi ${roomTerkunci.opsi_izinkan_join_telat}`,
+  )
+
+  const { error: eDitolak } = await klien()
+    .rpc('masuk_room', { p_kode: kode, p_nama: 'Eka' }).single()
+  periksa(
+    'pendatang baru ditolak saat opsinya mati',
+    eDitolak?.message ===
+      'This session has already started and is closed to new people.',
+    eDitolak?.message ?? 'malah diterima',
+  )
+
+  await a.rpc('ubah_opsi_join_telat', {
+    p_kode: kode,
+    p_host_token: hostToken,
+    p_izinkan: true,
+  })
+  const { error: eEka } = await klien()
+    .rpc('masuk_room', { p_kode: kode, p_nama: 'Eka' }).single()
+  periksa(
+    'pendatang baru diterima lagi setelah opsinya dinyalakan',
+    !eEka,
+    eEka?.message ?? 'Eka masuk',
+  )
+
   // --- Pengacakan benar-benar acak ---
   const urutanTerlihat = new Set()
   for (let i = 0; i < 6; i += 1) {

@@ -19,3 +19,17 @@ export async function giliranBerikutnya(
   if (error) throw new Error(error.message)
   return data as number
 }
+
+export async function ubahOpsiJoinTelat(
+  kode: string,
+  hostToken: string,
+  izinkan: boolean,
+): Promise<boolean> {
+  const { data, error } = await buatKlienSupabase().rpc('ubah_opsi_join_telat', {
+    p_kode: kode,
+    p_host_token: hostToken,
+    p_izinkan: izinkan,
+  })
+  if (error) throw new Error(error.message)
+  return data as boolean
+}
