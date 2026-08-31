@@ -100,7 +100,7 @@ Contoh utuh satu sub-tema, dipakai sebagai model untuk 33 sub-tema lainnya:
   { id: 'spiritual-faith-10', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'What would you ask God if you only got one question?' },
 ```
 
-- [ ] **Step 1: Tulis uji penjaga integritas bank lebih dulu**
+- [x] **Step 1: Tulis uji penjaga integritas bank lebih dulu**
 
 Buat `src/data/__tests__/bank-pertanyaan.test.ts`:
 
@@ -186,12 +186,12 @@ describe('bank pertanyaan', () => {
 
 Uji inilah yang menggantikan pemeriksaan manual atas 400 baris data. Tanpa itu, satu sub-tema yang terlewat atau satu id kembar akan lolos sampai muncul sebagai bug aneh di tengah sesi.
 
-- [ ] **Step 2: Jalankan dan pastikan gagal**
+- [x] **Step 2: Jalankan dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/data/bank-pertanyaan'`.
 
-- [ ] **Step 3: Tulis kerangka berkas bank**
+- [x] **Step 3: Tulis kerangka berkas bank**
 
 Buat `src/data/bank-pertanyaan.ts`:
 
@@ -214,20 +214,20 @@ export const BANK: PertanyaanBank[] = [
 ]
 ```
 
-- [ ] **Step 4: Isi seluruh 34 sub-tema**
+- [x] **Step 4: Isi seluruh 34 sub-tema**
 
 Tulis 10–13 pertanyaan untuk setiap pasangan tema/sub-tema di tabel taksonomi, mengikuti aturan penulisan, aturan nilai, dan gaya contoh `spiritual-faith-*` di atas. Kerjakan tema per tema supaya mudah ditelusuri kalau ada yang kurang.
 
-- [ ] **Step 5: Jalankan uji sampai ketujuh-tujuhnya lulus**
+- [x] **Step 5: Jalankan uji sampai ketujuh-tujuhnya lulus**
 
 Run: `pnpm test src/data`
 Expected: LULUS — 7 uji. Kalau ada yang gagal, pesan galatnya menyebut tema dan sub-tema atau id yang bermasalah; perbaiki isinya, jangan longgarkan ujinya.
 
-- [ ] **Step 6: Baca sekali dan coret yang tidak cocok** — *setelah loop, bukan penghalang*
+- [ ] **Step 6: Baca sekali dan coret yang tidak cocok** — *setelah loop, bukan penghalang* — **belum dikerjakan, sengaja ditunda ke akhir Fase 1**
 
 Ini langkah manual untuk pemilik project, bukan untuk agen, dan **bukan syarat Task 1 dianggap selesai**. Loop lanjut ke Task 2 tanpa menunggunya. Kerjakan bersama uji HP di akhir Potongan 6: baca seluruh bank sekali dan hapus pertanyaan yang terasa tidak pas untuk kelompokmu. Setelah menghapus, jalankan `pnpm test src/data` lagi — kalau ada sub-tema yang jatuh di bawah 10, tambahkan gantinya.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/data/bank-pertanyaan.ts src/data/__tests__
