@@ -256,13 +256,13 @@ git commit -m "feat: bank pertanyaan dua tingkat berikut penjaga integritasnya"
   - `keadaanCentang(id: string[], terpilih: Set<string>): KeadaanCentang`
   - `alihkan(id: string[], terpilih: Set<string>): Set<string>`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/bank.test.ts`:
 
 ```typescript
 import { describe, expect, it } from 'vitest'
-import { kelompokkanBank } from '@/lib/bank'
+import { idDiSubTema, idDiTema, kelompokkanBank } from '@/lib/bank'
 import type { PertanyaanBank } from '@/data/bank-pertanyaan'
 
 const contoh: PertanyaanBank[] = [
@@ -287,6 +287,18 @@ describe('kelompokkanBank', () => {
 
   it('mengembalikan larik kosong untuk bank kosong', () => {
     expect(kelompokkanBank([])).toEqual([])
+  })
+})
+
+describe('idDiSubTema dan idDiTema', () => {
+  it('mengumpulkan id satu sub-tema', () => {
+    const pohon = kelompokkanBank(contoh)
+    expect(idDiSubTema(pohon[0].subTema[0])).toEqual(['a-1', 'a-2'])
+  })
+
+  it('mengumpulkan id seluruh sub-tema di bawah satu tema', () => {
+    const pohon = kelompokkanBank(contoh)
+    expect(idDiTema(pohon[0])).toEqual(['a-1', 'a-2', 'a-3'])
   })
 })
 ```
@@ -342,12 +354,12 @@ describe('alihkan', () => {
 
 "Sebagian → penuh" itu keputusan perilaku, bukan detail: menekan tema yang setengah tercentang harus **menambah sisanya**, bukan mengosongkan. Kalau kebalikannya, orang yang sudah susah payah memilih beberapa pertanyaan satuan akan kehilangan pilihannya karena satu ketukan.
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — modul `@/lib/bank` dan `@/lib/pilihan` belum ada.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/bank.ts`:
 
@@ -414,12 +426,12 @@ export function alihkan(id: string[], terpilih: Set<string>): Set<string> {
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — semua uji hijau, tidak ada yang gagal atau di-skip. Angka mati sengaja tidak dipatok di sini; yang dijaga adalah tidak ada yang merah.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/bank.ts src/lib/pilihan.ts src/lib/__tests__/bank.test.ts src/lib/__tests__/pilihan.test.ts
