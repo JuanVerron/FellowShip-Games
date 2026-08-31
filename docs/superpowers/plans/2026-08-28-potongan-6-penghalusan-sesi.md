@@ -45,7 +45,7 @@
 - Consumes: `rooms`, `room_secrets`, `room_questions` (Potongan 2–5)
 - Produces: `public.sisip_pertanyaan(p_kode text, p_host_token text, p_teks text)` → `uuid`
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
 Buat `supabase/migrations/0008_sisipan.sql`:
 
@@ -113,7 +113,7 @@ $$;
 grant execute on function public.sisip_pertanyaan(text, text, text) to anon;
 ```
 
-- [ ] **Step 2: Terapkan dan verifikasi**
+- [x] **Step 2: Terapkan dan verifikasi**
 
 Terapkan lewat CLI, bukan dashboard, supaya langkah ini bisa dijalankan tanpa tangan manusia:
 
@@ -129,9 +129,9 @@ node scripts/sql.mjs "select public.sisip_pertanyaan('KODE','HOST_TOKEN','A ques
 node scripts/sql.mjs "select public.sisip_pertanyaan('KODE','token-ngawur','Should be rejected?');"
 ```
 
-Expected: panggilan pertama mengembalikan uuid; panggilan kedua gagal dengan `Only the host can add a question.` — bukti bahwa penolakannya ada di database, bukan cuma di browser.
+Rangkaiannya ditulis sebagai `scripts/verifikasi-sisipan.mjs`, mengikuti pola `scripts/verifikasi-kolam.mjs`. Jalankan dengan `node scripts/verifikasi-sisipan.mjs`: tujuh pemeriksaan, semuanya harus lulus. Yang paling berarti di antaranya adalah penolakan terhadap peserta biasa — itu membuktikan penjagaannya ada di database, bukan pada kotak sisipan yang cuma disembunyikan di browser.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add supabase/migrations/0008_sisipan.sql
