@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Nol biaya. Package manager: pnpm. Uji: `pnpm test`.
-- Antarmuka berbahasa Indonesia, bernada percakapan. Potret HP 360px. Sentuh minimal 44px.
+- Antarmuka berbahasa Inggris, bernada percakapan. Potret HP 360px. Sentuh minimal 44px.
 - Pertanyaan sisipan masuk kolam untuk putaran berikutnya, **tidak boleh** dipaksa keluar sekarang.
 - Pertanyaan sisipan hidup di room itu saja; tidak masuk bank permanen.
 - Hormati `prefers-reduced-motion`.
@@ -27,7 +27,7 @@
 
 | Berkas | Tanggung jawab |
 |---|---|
-| `supabase/migrations/0006_sisipan.sql` | Fungsi `sisip_pertanyaan` milik host |
+| `supabase/migrations/0008_sisipan.sql` | Fungsi `sisip_pertanyaan` milik host |
 | `src/lib/sisipan.ts` | Merapikan dan memvalidasi teks sisipan, serta membungkus RPC-nya |
 | `src/hooks/useRoom.ts` | Diperluas: menarik ulang data saat tab kembali terlihat dan saat jaringan pulih |
 | `src/components/KotakSisipan.tsx` | Kotak isian sisipan, hanya tampil untuk host |
@@ -39,7 +39,7 @@
 ### Task 1: Fungsi sisip pertanyaan
 
 **Files:**
-- Create: `supabase/migrations/0006_sisipan.sql`
+- Create: `supabase/migrations/0008_sisipan.sql`
 
 **Interfaces:**
 - Consumes: `rooms`, `room_secrets`, `room_questions` (Potongan 2–5)
@@ -47,9 +47,14 @@
 
 - [ ] **Step 1: Tulis berkas migrasi**
 
-Buat `supabase/migrations/0006_sisipan.sql`:
+Buat `supabase/migrations/0008_sisipan.sql`:
 
 ```sql
+-- Sisipan pertanyaan milik host, di tengah sesi yang sedang berjalan.
+--
+-- Semua acuan kolom diawali nama tabelnya, mengikuti pola migrasi Potongan 4
+-- dan 5. `extensions` ikut di search_path supaya sejalan dengan fungsi lain,
+-- walau fungsi ini sendiri belum memanggil apa pun dari sana.
 create or replace function public.sisip_pertanyaan(
   p_kode text,
   p_host_token text,
@@ -58,7 +63,7 @@ create or replace function public.sisip_pertanyaan(
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room public.rooms%rowtype;
@@ -66,30 +71,33 @@ declare
   v_id uuid;
 begin
   select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
+   where rooms.kode = upper(trim(p_kode)) and rooms.kedaluwarsa_pada > now();
   if not found then
-    raise exception 'room tidak ditemukan';
+    raise exception 'Room not found.';
   end if;
 
+  -- Kewenangan host dibuktikan dengan host_token, bukan dengan kotak sisipan
+  -- yang cuma disembunyikan di browser.
   if not exists (select 1 from public.room_secrets
-                  where room_id = v_room.id and host_token = p_host_token) then
-    raise exception 'hanya host yang boleh menyisipkan pertanyaan';
+                  where room_secrets.room_id = v_room.id
+                    and room_secrets.host_token = p_host_token) then
+    raise exception 'Only the host can add a question.';
   end if;
 
   if v_room.status = 'selesai' then
-    raise exception 'sesi sudah selesai';
+    raise exception 'This session has already finished.';
   end if;
 
   if p_teks is null or length(trim(p_teks)) = 0 then
-    raise exception 'pertanyaan tidak boleh kosong';
+    raise exception 'A question needs some text.';
   end if;
 
   if length(trim(p_teks)) > 200 then
-    raise exception 'pertanyaan terlalu panjang';
+    raise exception 'That question is too long, 200 characters max.';
   end if;
 
-  select coalesce(max(urutan), -1) + 1 into v_urutan
-    from public.room_questions where room_id = v_room.id;
+  select coalesce(max(q.urutan), -1) + 1 into v_urutan
+    from public.room_questions q where q.room_id = v_room.id;
 
   -- Masuk kolam dengan sudah_keluar = false, sehingga ia ikut undian
   -- putaran BERIKUTNYA. Tidak ada jalan bagi host untuk memaksanya keluar
@@ -107,19 +115,26 @@ grant execute on function public.sisip_pertanyaan(text, text, text) to anon;
 
 - [ ] **Step 2: Terapkan dan verifikasi**
 
-Dashboard Supabase → **SQL Editor** → tempel → **Run**. Lalu, dengan room yang sudah ada:
+Terapkan lewat CLI, bukan dashboard, supaya langkah ini bisa dijalankan tanpa tangan manusia:
 
-```sql
-select public.sisip_pertanyaan('KODE', 'HOST_TOKEN', 'Pertanyaan dadakan?');
-select public.sisip_pertanyaan('KODE', 'token-ngawur', 'Harusnya ditolak?');
+```bash
+set -a; . ./.env.local; set +a
+npx supabase db push --password "$SUPABASE_DB_PASSWORD"
 ```
 
-Expected: panggilan pertama mengembalikan uuid; panggilan kedua gagal dengan `hanya host yang boleh menyisipkan pertanyaan`.
+Lalu, dengan room yang sudah ada:
+
+```bash
+node scripts/sql.mjs "select public.sisip_pertanyaan('KODE','HOST_TOKEN','A question out of nowhere?');"
+node scripts/sql.mjs "select public.sisip_pertanyaan('KODE','token-ngawur','Should be rejected?');"
+```
+
+Expected: panggilan pertama mengembalikan uuid; panggilan kedua gagal dengan `Only the host can add a question.` — bukti bahwa penolakannya ada di database, bukan cuma di browser.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/0006_sisipan.sql
+git add supabase/migrations/0008_sisipan.sql
 git commit -m "feat: fungsi sisip pertanyaan untuk host"
 ```
 
@@ -213,7 +228,7 @@ export async function sisipPertanyaan(
 - [ ] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 12 berkas uji, 58 uji.
+Expected: LULUS — semua uji hijau, tidak ada yang gagal atau di-skip.
 
 - [ ] **Step 5: Commit**
 
@@ -272,7 +287,7 @@ export function useRoom(kode: string) {
         setPeserta([])
         setKolam([])
         setPutaran(null)
-        setGalat('Room tidak ditemukan')
+        setGalat('Room not found.')
         return
       }
 
@@ -289,7 +304,7 @@ export function useRoom(kode: string) {
       setGalat(null)
     } catch (e) {
       if (!dibatalkan.current) {
-        setGalat(e instanceof Error ? e.message : 'Gagal memuat room')
+        setGalat(e instanceof Error ? e.message : 'Could not load this room.')
       }
     } finally {
       if (!dibatalkan.current) setMemuat(false)
@@ -388,7 +403,7 @@ export function KotakSisipan({
 
   async function kirim() {
     if (!pertanyaanValid(teks)) {
-      setKabar('Pertanyaan tidak boleh kosong, maksimal 200 karakter.')
+      setKabar('A question needs some text, 200 characters max.')
       return
     }
 
@@ -397,9 +412,9 @@ export function KotakSisipan({
     try {
       await sisipPertanyaan(kode, hostToken, teks)
       setTeks('')
-      setKabar('Masuk kolam untuk putaran berikutnya.')
+      setKabar('Added to the pool for the next spin.')
     } catch (e) {
-      setKabar(e instanceof Error ? e.message : 'Gagal menyisipkan')
+      setKabar(e instanceof Error ? e.message : 'Could not add that question.')
     } finally {
       setSibuk(false)
     }
@@ -435,7 +450,7 @@ export function KotakSisipan({
           disabled={sibuk}
           className="min-h-[44px] flex-1 rounded-lg bg-black font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-black"
         >
-          {sibuk ? 'Menambah…' : 'Tambah ke kolam'}
+          {sibuk ? 'Adding…' : 'Add to pool'}
         </button>
         <button
           type="button"
@@ -498,7 +513,7 @@ import type { Metadata, Viewport } from 'next'
 
 export const metadata: Metadata = {
   title: 'Fellowship Games',
-  description: 'Roulette bank pertanyaan untuk sesi fellowship',
+  description: 'Question bank roulette for fellowship sessions',
 }
 
 export const viewport: Viewport = {
@@ -552,7 +567,7 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 6 — dan Fase 1
 
-1. `pnpm test` lulus, 58 uji. `pnpm build` bersih.
+1. `pnpm test` lulus seluruhnya, tidak ada yang gagal atau di-skip. `pnpm build` bersih.
 2. Host menyisipkan pertanyaan di tengah sesi; ia masuk kolam, terlihat di semua layar, dan ikut undian putaran berikutnya — tidak pernah dipaksa keluar seketika.
 3. Peserta bukan host tidak punya jalan menyisipkan pertanyaan, termasuk lewat pemanggilan langsung ke database.
 4. HP dikunci beberapa menit lalu dibuka: layar kembali ke giliran dan pertanyaan yang benar tanpa mengetik nama ulang.
@@ -561,3 +576,27 @@ pnpm dlx vercel@latest --prod
 7. Dengan "kurangi animasi" menyala, roda tetap memberi hasil tanpa putaran panjang.
 
 **Setelah ketujuhnya terpenuhi, Fase 1 selesai.** Jalankan satu sesi fellowship sungguhan sebelum menyentuh apa pun dari Fase 2 — urutan pengerjaan Fase 2 memang sengaja belum ditetapkan, karena kenyataan sesi pertama yang berhak menentukannya.
+
+---
+
+## Catatan Perubahan
+
+Rencana ini ditulis sebelum Potongan 1–5 dikerjakan. Yang berubah setelah diselaraskan dengan kenyataan repo:
+
+1. **Migrasi `0006_sisipan.sql` jadi `0008_sisipan.sql`.** Potongan 4 memakai `0005_giliran.sql` dan `0006_opsi_room.sql`; Potongan 5 memakai `0007_opsi_dan_kolam.sql`.
+
+2. **Pesan galat SQL dan seluruh teks antarmuka diterjemahkan ke Inggris.** `CLAUDE.md` diperbarui setelah rencana ini ditulis. Yang ikut berubah: pesan `sisip_pertanyaan`, kabar di kotak sisipan, label tombol `Add to pool`, pesan galat pemulihan room, dan `metadata.description` di `layout.tsx` — yang di repo sudah berbahasa Inggris, sehingga rencana lama justru akan memundurkannya. Fixture uji tetap berbahasa Indonesia; itu kode, bukan antarmuka.
+
+3. **`search_path` jadi `public, extensions` dan semua acuan kolom diawali nama tabelnya.** Mengikuti pola yang sudah terbukti di migrasi Potongan 4 dan 5.
+
+4. **Verifikasi pindah dari SQL Editor ke CLI.** `npx supabase db push` dan `node scripts/sql.mjs` menggantikan langkah tempel-dan-Run di dashboard.
+
+5. **Angka uji mati diganti patokan relatif.** "58 uji" tidak lagi bermakna setelah akhir Potongan 4 saja sudah 62.
+
+### Penyimpangan yang disengaja dari `CLAUDE.md`
+
+`CLAUDE.md` mensyaratkan tiap potongan dibuka dan diuji di HP sungguhan sebelum potongan berikutnya dimulai. Atas keputusan pemilik project pada 2026-08-29, Potongan 5 dan 6 dikerjakan berurutan tanpa jeda uji di antaranya, dan keduanya diuji sekaligus di akhir.
+
+Risikonya diketahui dan diterima: bug Potongan 5 yang hanya muncul di HP sungguhan — tata letak 360px, perilaku Realtime saat layar terkunci, ukuran sasaran sentuh — baru ketahuan setelah Potongan 6 menumpuk di atasnya, sehingga penelusurannya lebih mahal. Yang menahan risiko itu sementara: `pnpm test`, `pnpm build`, dan verifikasi fungsi database lewat `scripts/sql.mjs` di tiap task.
+
+Uji HP gabungan di akhir menjadi syarat mati Fase 1. Ia tidak boleh dilewati, dan tujuh butir "Definisi Selesai" di atas tetap berlaku utuh.

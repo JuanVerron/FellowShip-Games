@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Nol biaya. Package manager: pnpm. Uji: `pnpm test`.
-- Antarmuka berbahasa Indonesia, bernada percakapan. Potret HP 360px. Sentuh minimal 44px.
+- Antarmuka berbahasa Inggris, bernada percakapan — termasuk teks pertanyaan di bank dan nama tema yang tampil di accordion. Potret HP 360px. Sentuh minimal 44px.
 - Bank berstruktur **tepat dua tingkat**: Tema → Sub-tema. Tidak ada tingkat ketiga, tidak ada label lintas tema.
 - Bank hanya bisa diubah lewat berkas di repo. Tidak boleh ada layar tambah/ubah/hapus bank di aplikasi.
 - Jumlah tema atau sub-tema yang dipilih saat membuat room **tidak dibatasi**.
@@ -33,7 +33,7 @@
 | `src/lib/pilihan.ts` | Aritmetika pencentangan: apa yang terpilih, apa yang sebagian, apa efek satu klik |
 | `src/components/PenjelajahBank.tsx` | Accordion tema → sub-tema → pertanyaan, dengan tiga tingkat pencentangan |
 | `src/app/buat/page.tsx` | Dirombak: penjelajah bank, kotak tulis sendiri, dua sakelar opsi |
-| `supabase/migrations/0005_opsi_dan_kolam.sql` | `buat_room` versi opsi lengkap dan `putar_roda` yang menghormati opsi buang-terpakai |
+| `supabase/migrations/0007_opsi_dan_kolam.sql` | `buat_room` versi opsi lengkap dan `putar_roda` yang menghormati opsi buang-terpakai |
 | `src/data/contoh-pertanyaan.ts` | **Dihapus** di task terakhir |
 
 ---
@@ -54,40 +54,50 @@
 
 | Tema | Sub-tema |
 |---|---|
-| ROHANI | Iman, Doa, Keraguan, Panggilan |
-| KELUARGA | Masa Kecil, Hal Lucu, Konflik, Rasa Syukur |
-| DIRI SENDIRI | Ketakutan, Impian, Kebiasaan, Kelemahan |
-| PERTEMANAN | Kenangan, Kepercayaan, Kehilangan |
-| CINTA | Perasaan, Patah Hati, Harapan |
-| PEKERJAAN | Ambisi, Kegagalan, Keseharian |
-| RINGAN | Makanan, Musik, Pilihan Aneh, Kalau Seandainya |
-| MASA LALU | Penyesalan, Titik Balik, Orang Berjasa |
-| MASA DEPAN | Rencana, Kekhawatiran, Warisan |
-| PENGAKUAN | Rahasia Kecil, Hal Memalukan, Kejujuran |
+| SPIRITUAL | Faith, Prayer, Doubt, Calling |
+| FAMILY | Childhood, Funny Moments, Conflict, Gratitude |
+| SELF | Fears, Dreams, Habits, Weaknesses |
+| FRIENDSHIP | Memories, Trust, Loss |
+| LOVE | Feelings, Heartbreak, Hope |
+| WORK | Ambition, Failure, Daily Grind |
+| LIGHT | Food, Music, Odd Picks, What If |
+| PAST | Regrets, Turning Points, People Who Helped |
+| FUTURE | Plans, Worries, Legacy |
+| CONFESSIONS | Small Secrets, Awkward Moments, Honesty |
 
 Sepuluh tema, 34 sub-tema. Isi **10–13 pertanyaan per sub-tema**, sehingga totalnya jatuh di kisaran 340–440.
 
 Aturan penulisan isi:
 
-- `id` berbentuk `<slug-tema>-<slug-sub-tema>-<dua digit>`, contoh `rohani-iman-01`, `ringan-kalau-seandainya-07`. Slug huruf kecil, spasi jadi tanda hubung. Id tidak pernah didaur ulang.
-- Teks berbahasa Indonesia percakapan, menyapa dengan "kamu", diakhiri tanda tanya.
+- `id` berbentuk `<slug-tema>-<slug-sub-tema>-<dua digit>`, contoh `spiritual-faith-01`, `light-what-if-07`. Slug huruf kecil, spasi jadi tanda hubung. Id tidak pernah didaur ulang.
+- Teks berbahasa Inggris percakapan, menyapa dengan "you", diakhiri tanda tanya.
 - Satu pertanyaan menanyakan satu hal. Jangan menggabung dua pertanyaan dengan "dan".
 - Tidak ada dua pertanyaan berteks sama persis di seluruh bank.
 - Panjang wajar untuk dibaca di layar HP: di bawah 120 karakter.
 
+**Aturan nilai — ini yang menentukan bank layak dipakai atau tidak.** Bank ini dipakai di sesi fellowship, dan pertanyaannya ikut menentukan ke mana obrolan bergerak.
+
+- Tidak ada muatan seksual dalam bentuk apa pun, termasuk sindiran dan lelucon.
+- Jangan mengajak orang menceritakan, membanggakan, atau meromantisasi dosa — mabuk, judi, balas dendam, perselingkuhan, kebencian.
+- `CONFESSIONS` bukan ruang mengorek aib. Isinya hal memalukan yang bisa ditertawakan bersama dan kejujuran yang membangun, bukan pengakuan yang mempermalukan orang di depan kelompoknya.
+- `LOVE` bicara perasaan, patah hati, dan pengharapan — bukan riwayat pacaran atau perbandingan mantan.
+- Nada yang dituju: pertanyaan yang membuat orang lebih dekat satu sama lain **dan** lebih dekat kepada Tuhan, sejalan teladan Yesus. Kalau sebuah pertanyaan tidak lolos ukuran itu, ganti — jangan dipaksakan supaya jumlahnya cukup.
+
+Step 1 memasang uji yang menolak daftar kata terlarang. Uji itu **lantai, bukan langit-langit**: lolos di sana tidak berarti pertanyaannya pantas. Yang menjaga selera tetap aturan di atas.
+
 Contoh utuh satu sub-tema, dipakai sebagai model untuk 33 sub-tema lainnya:
 
 ```typescript
-  { id: 'rohani-iman-01', tema: 'ROHANI', subTema: 'Iman', teks: 'Kapan terakhir kali kamu merasa Tuhan benar-benar dekat?' },
-  { id: 'rohani-iman-02', tema: 'ROHANI', subTema: 'Iman', teks: 'Bagian mana dari imanmu yang paling sulit kamu jelaskan ke orang lain?' },
-  { id: 'rohani-iman-03', tema: 'ROHANI', subTema: 'Iman', teks: 'Siapa orang yang paling memengaruhi cara kamu percaya?' },
-  { id: 'rohani-iman-04', tema: 'ROHANI', subTema: 'Iman', teks: 'Apa yang bikin kamu bertahan waktu semuanya terasa berat?' },
-  { id: 'rohani-iman-05', tema: 'ROHANI', subTema: 'Iman', teks: 'Ayat atau kalimat apa yang paling sering kamu ingat?' },
-  { id: 'rohani-iman-06', tema: 'ROHANI', subTema: 'Iman', teks: 'Pernahkah kamu merasa imanmu berubah bentuk seiring umur?' },
-  { id: 'rohani-iman-07', tema: 'ROHANI', subTema: 'Iman', teks: 'Apa hal paling kecil yang pernah bikin kamu bersyukur seharian?' },
-  { id: 'rohani-iman-08', tema: 'ROHANI', subTema: 'Iman', teks: 'Kalau imanmu punya suara, dia paling sering bilang apa ke kamu?' },
-  { id: 'rohani-iman-09', tema: 'ROHANI', subTema: 'Iman', teks: 'Kapan kamu paling sulit percaya bahwa semuanya akan baik-baik saja?' },
-  { id: 'rohani-iman-10', tema: 'ROHANI', subTema: 'Iman', teks: 'Apa yang pengin kamu tanyakan langsung ke Tuhan kalau boleh satu pertanyaan?' },
+  { id: 'spiritual-faith-01', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'When did you last feel that God was really close?' },
+  { id: 'spiritual-faith-02', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'Which part of your faith is hardest to explain to someone else?' },
+  { id: 'spiritual-faith-03', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'Who has shaped the way you believe the most?' },
+  { id: 'spiritual-faith-04', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'What keeps you holding on when everything feels heavy?' },
+  { id: 'spiritual-faith-05', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'Which verse or line do you come back to most often?' },
+  { id: 'spiritual-faith-06', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'Has your faith changed shape as you have grown older?' },
+  { id: 'spiritual-faith-07', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'What is the smallest thing that kept you thankful all day?' },
+  { id: 'spiritual-faith-08', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'If your faith had a voice, what would it say to you most?' },
+  { id: 'spiritual-faith-09', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'When is it hardest for you to believe things will be okay?' },
+  { id: 'spiritual-faith-10', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'What would you ask God if you only got one question?' },
 ```
 
 - [ ] **Step 1: Tulis uji penjaga integritas bank lebih dulu**
@@ -99,16 +109,16 @@ import { describe, expect, it } from 'vitest'
 import { BANK } from '@/data/bank-pertanyaan'
 
 const TAKSONOMI: Record<string, string[]> = {
-  ROHANI: ['Iman', 'Doa', 'Keraguan', 'Panggilan'],
-  KELUARGA: ['Masa Kecil', 'Hal Lucu', 'Konflik', 'Rasa Syukur'],
-  'DIRI SENDIRI': ['Ketakutan', 'Impian', 'Kebiasaan', 'Kelemahan'],
-  PERTEMANAN: ['Kenangan', 'Kepercayaan', 'Kehilangan'],
-  CINTA: ['Perasaan', 'Patah Hati', 'Harapan'],
-  PEKERJAAN: ['Ambisi', 'Kegagalan', 'Keseharian'],
-  RINGAN: ['Makanan', 'Musik', 'Pilihan Aneh', 'Kalau Seandainya'],
-  'MASA LALU': ['Penyesalan', 'Titik Balik', 'Orang Berjasa'],
-  'MASA DEPAN': ['Rencana', 'Kekhawatiran', 'Warisan'],
-  PENGAKUAN: ['Rahasia Kecil', 'Hal Memalukan', 'Kejujuran'],
+  SPIRITUAL: ['Faith', 'Prayer', 'Doubt', 'Calling'],
+  FAMILY: ['Childhood', 'Funny Moments', 'Conflict', 'Gratitude'],
+  SELF: ['Fears', 'Dreams', 'Habits', 'Weaknesses'],
+  FRIENDSHIP: ['Memories', 'Trust', 'Loss'],
+  LOVE: ['Feelings', 'Heartbreak', 'Hope'],
+  WORK: ['Ambition', 'Failure', 'Daily Grind'],
+  LIGHT: ['Food', 'Music', 'Odd Picks', 'What If'],
+  PAST: ['Regrets', 'Turning Points', 'People Who Helped'],
+  FUTURE: ['Plans', 'Worries', 'Legacy'],
+  CONFESSIONS: ['Small Secrets', 'Awkward Moments', 'Honesty'],
 }
 
 describe('bank pertanyaan', () => {
@@ -152,6 +162,25 @@ describe('bank pertanyaan', () => {
       expect(p.teks.length, p.id).toBeLessThan(120)
     }
   })
+
+  // Penjaga nilai. Bank ini dipakai di sesi fellowship, jadi pertanyaannya
+  // tidak boleh menggiring obrolan ke hal yang menjauhkan orang dari Tuhan.
+  //
+  // Daftar ini lantai, bukan langit-langit: lolos di sini tidak berarti
+  // pertanyaannya pantas. Aturan nilai di kepala Task 1 yang menjaga selera,
+  // dan pembacaan manusia di Step 6 tetap langkah terakhir.
+  it('tidak memuat topik yang menjauhkan dari teladan Yesus', () => {
+    const TERLARANG = [
+      'sex', 'sexy', 'sexual', 'porn', 'nude', 'naked', 'hookup',
+      'drunk', 'drunken', 'booze', 'alcohol', 'drug', 'drugs', 'weed',
+      'gamble', 'gambling', 'affair', 'affairs', 'revenge',
+    ]
+    const pola = new RegExp(`\b(${TERLARANG.join('|')})\b`, 'i')
+    for (const p of BANK) {
+      const cocok = p.teks.match(pola)
+      expect(cocok?.[0], `${p.id}: "${p.teks}"`).toBeUndefined()
+    }
+  })
 })
 ```
 
@@ -176,25 +205,27 @@ export type PertanyaanBank = {
 
 // Bank permanen. Hanya bisa diubah lewat berkas ini, lalu deploy ulang.
 // Struktur tepat dua tingkat: tema → subTema. Jangan tambah tingkat ketiga.
+//
+// Teksnya berbahasa Inggris karena ini yang dibaca peserta di layar.
 export const BANK: PertanyaanBank[] = [
-  // ROHANI → Iman
-  { id: 'rohani-iman-01', tema: 'ROHANI', subTema: 'Iman', teks: 'Kapan terakhir kali kamu merasa Tuhan benar-benar dekat?' },
-  // … lanjutkan sesuai aturan penulisan di kepala Task 1
+  // SPIRITUAL → Faith
+  { id: 'spiritual-faith-01', tema: 'SPIRITUAL', subTema: 'Faith', teks: 'When did you last feel that God was really close?' },
+  // … lanjutkan sesuai aturan penulisan dan aturan nilai di kepala Task 1
 ]
 ```
 
 - [ ] **Step 4: Isi seluruh 34 sub-tema**
 
-Tulis 10–13 pertanyaan untuk setiap pasangan tema/sub-tema di tabel taksonomi, mengikuti aturan penulisan dan gaya contoh `rohani-iman-*` di atas. Kerjakan tema per tema supaya mudah ditelusuri kalau ada yang kurang.
+Tulis 10–13 pertanyaan untuk setiap pasangan tema/sub-tema di tabel taksonomi, mengikuti aturan penulisan, aturan nilai, dan gaya contoh `spiritual-faith-*` di atas. Kerjakan tema per tema supaya mudah ditelusuri kalau ada yang kurang.
 
-- [ ] **Step 5: Jalankan uji sampai keenam-enamnya lulus**
+- [ ] **Step 5: Jalankan uji sampai ketujuh-tujuhnya lulus**
 
 Run: `pnpm test src/data`
-Expected: LULUS — 6 uji. Kalau ada yang gagal, pesan galatnya menyebut tema dan sub-tema yang bermasalah; perbaiki isinya, jangan longgarkan ujinya.
+Expected: LULUS — 7 uji. Kalau ada yang gagal, pesan galatnya menyebut tema dan sub-tema atau id yang bermasalah; perbaiki isinya, jangan longgarkan ujinya.
 
-- [ ] **Step 6: Baca sekali dan coret yang tidak cocok**
+- [ ] **Step 6: Baca sekali dan coret yang tidak cocok** — *setelah loop, bukan penghalang*
 
-Ini langkah manual untuk pemilik project, bukan untuk agen. Baca seluruh bank sekali dan hapus pertanyaan yang terlalu menusuk untuk kelompokmu. Setelah menghapus, jalankan `pnpm test src/data` lagi — kalau ada sub-tema yang jatuh di bawah 10, tambahkan gantinya.
+Ini langkah manual untuk pemilik project, bukan untuk agen, dan **bukan syarat Task 1 dianggap selesai**. Loop lanjut ke Task 2 tanpa menunggunya. Kerjakan bersama uji HP di akhir Potongan 6: baca seluruh bank sekali dan hapus pertanyaan yang terasa tidak pas untuk kelompokmu. Setelah menghapus, jalankan `pnpm test src/data` lagi — kalau ada sub-tema yang jatuh di bawah 10, tambahkan gantinya.
 
 - [ ] **Step 7: Commit**
 
@@ -386,7 +417,7 @@ export function alihkan(id: string[], terpilih: Set<string>): Set<string> {
 - [ ] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
-Expected: LULUS — 11 berkas uji, 53 uji.
+Expected: LULUS — semua uji hijau, tidak ada yang gagal atau di-skip. Angka mati sengaja tidak dipatok di sini; yang dijaga adalah tidak ada yang merah.
 
 - [ ] **Step 5: Commit**
 
@@ -400,19 +431,31 @@ git commit -m "feat: pengelompokan bank dan aritmetika pencentangan"
 ### Task 3: Opsi room dan kolam yang menyusut
 
 **Files:**
-- Create: `supabase/migrations/0005_opsi_dan_kolam.sql`
+- Create: `supabase/migrations/0007_opsi_dan_kolam.sql`
 
 **Interfaces:**
 - Consumes: `rooms`, `room_questions`, `spins` (Potongan 2–4)
 - Produces:
   - `public.buat_room(p_nama_host text, p_pertanyaan jsonb, p_buang_terpakai boolean, p_izinkan_join_telat boolean)` — **menggantikan** versi dua argumen
-  - `public.putar_roda(p_kode text, p_token text, p_host_token text)` — versi yang menghormati `opsi_buang_terpakai` dan menutup sesi saat kolam habis
+  - `public.putar_roda(p_kode text, p_token text, p_host_token text)` — versi yang menghormati `opsi_buang_terpakai`, dan saat kolam habis menutup sesi lalu mengembalikan **nol baris** (bukan galat). Task 4 harus membaca nol baris sebagai isyarat sesi selesai.
 
 - [ ] **Step 1: Tulis berkas migrasi**
 
-Buat `supabase/migrations/0005_opsi_dan_kolam.sql`:
+Buat `supabase/migrations/0007_opsi_dan_kolam.sql`:
 
 ```sql
+-- Opsi room lengkap dan kolam yang menyusut.
+--
+-- Dua perubahan sekaligus karena keduanya menyentuh fungsi yang sama:
+--   1. `buat_room` menerima kedua sakelar opsi, dan daftar pertanyaannya
+--      membawa asal-usul tiap butir (bank atau tulis sendiri), bukan cuma teks.
+--   2. `putar_roda` menghormati `opsi_buang_terpakai` dan menutup sesi saat
+--      kolam habis.
+--
+-- Daftar pertanyaan pindah dari `text[]` ke `jsonb` karena `room_questions`
+-- punya kolom `sumber` dan `bank_question_id` sejak Potongan 4, dan larik teks
+-- polos tidak punya tempat untuk membawanya.
+
 drop function if exists public.buat_room(text, text[]);
 
 create or replace function public.buat_room(
@@ -430,7 +473,8 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+-- `extensions` wajib ikut: gen_random_bytes tinggal di sana, bukan di public.
+set search_path = public, extensions
 as $$
 declare
   v_room_id uuid;
@@ -444,11 +488,11 @@ declare
 begin
   if p_nama_host is null or length(trim(p_nama_host)) = 0
      or length(trim(p_nama_host)) > 20 then
-    raise exception 'nama tidak sah';
+    raise exception 'Name is required, 20 characters max.';
   end if;
 
   if p_pertanyaan is null or jsonb_array_length(p_pertanyaan) = 0 then
-    raise exception 'pilih minimal satu pertanyaan';
+    raise exception 'A room needs at least one question.';
   end if;
 
   v_kode := public.buat_kode_room();
@@ -466,13 +510,15 @@ begin
   insert into public.participants (room_id, nama, adalah_host)
     values (v_room_id, trim(p_nama_host), true)
     returning id into v_participant_id;
+
   insert into public.participant_secrets (participant_id, token)
     values (v_participant_id, v_participant_token);
 
   for v_butir in select * from jsonb_array_elements(p_pertanyaan) loop
     v_teks := trim(v_butir ->> 'teks');
     if v_teks is not null and length(v_teks) > 0 then
-      insert into public.room_questions (room_id, sumber, bank_question_id, teks, urutan)
+      insert into public.room_questions
+        (room_id, sumber, bank_question_id, teks, urutan)
         values (
           v_room_id,
           coalesce(v_butir ->> 'sumber', 'custom'),
@@ -485,7 +531,7 @@ begin
   end loop;
 
   if v_urutan = 0 then
-    raise exception 'pilih minimal satu pertanyaan';
+    raise exception 'A room needs at least one question.';
   end if;
 
   return query select v_room_id, v_kode, v_host_token,
@@ -493,6 +539,13 @@ begin
 end;
 $$;
 
+-- Menggantikan versi Potongan 4: kolam sekarang menyusut kalau host memilih
+-- opsi buang-terpakai, dan sesi berpindah ke `selesai` begitu kolam habis.
+--
+-- Semua acuan kolom diawali nama tabelnya. Klausa `returns table` membuat
+-- `teks` jadi variabel keluaran, dan tanpa awalan itu Postgres menolak dengan
+-- keluhan bahwa acuannya ambigu — galat yang sudah pernah menjaring fungsi ini
+-- di Potongan 4.
 create or replace function public.putar_roda(
   p_kode text,
   p_token text,
@@ -506,7 +559,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room public.rooms%rowtype;
@@ -517,13 +570,13 @@ declare
   v_benih int;
 begin
   select * into v_room from public.rooms
-   where kode = upper(trim(p_kode)) and kedaluwarsa_pada > now();
+   where rooms.kode = upper(trim(p_kode)) and rooms.kedaluwarsa_pada > now();
   if not found then
-    raise exception 'room tidak ditemukan';
+    raise exception 'Room not found.';
   end if;
 
   if v_room.status <> 'berjalan' then
-    raise exception 'sesi belum berjalan';
+    raise exception 'This session has not started yet.';
   end if;
 
   select p.id into v_pemanggil
@@ -531,44 +584,60 @@ begin
     join public.participant_secrets s on s.participant_id = p.id
    where p.room_id = v_room.id and s.token = p_token;
   if not found then
-    raise exception 'kamu bukan peserta room ini';
+    raise exception 'You are not in this room.';
   end if;
 
   v_adalah_host := p_host_token is not null and exists (
     select 1 from public.room_secrets
-     where room_id = v_room.id and host_token = p_host_token);
+     where room_secrets.room_id = v_room.id
+       and room_secrets.host_token = p_host_token);
 
   v_pemilik := public.pemilik_giliran(v_room.id, v_room.nomor_giliran_sekarang);
 
+  -- Penegakannya ada di sini, bukan pada tombol yang mati di browser.
+  -- Tombol yang mati cuma penjelas; ini pengamannya.
   if not v_adalah_host and v_pemanggil is distinct from v_pemilik then
-    raise exception 'sekarang bukan giliranmu';
+    raise exception 'It is not your turn yet.';
   end if;
 
+  -- Inti opsi buang-terpakai. Kalau opsinya mati, pertanyaan yang sudah keluar
+  -- tetap ikut undian dan kolam tidak pernah habis.
   select * into v_pertanyaan
-    from public.room_questions
-   where room_id = v_room.id
-     and (not v_room.opsi_buang_terpakai or not sudah_keluar)
+    from public.room_questions q
+   where q.room_id = v_room.id
+     and (not v_room.opsi_buang_terpakai or not q.sudah_keluar)
    order by random()
    limit 1;
 
   if not found then
-    -- Kolam habis. Tutup sesi supaya semua layar berpindah ke tampilan
-    -- selesai, bukan berhenti di roda kosong yang membingungkan.
-    update public.rooms set status = 'selesai' where id = v_room.id;
-    raise exception 'pertanyaan sudah habis';
+    -- Kolam habis. Sesi ditutup dan fungsi mengembalikan NOL BARIS.
+    --
+    -- Sengaja BUKAN `raise exception` di sini. Exception membatalkan seluruh
+    -- transaksi, termasuk update status tepat di bawah ini, sehingga sesi tidak
+    -- akan pernah benar-benar tertutup dan setiap putaran berikutnya mengulang
+    -- galat yang sama. Klien membaca nol baris sebagai "kolam habis", dan
+    -- Realtime mendorong perubahan status ke semua layar.
+    update public.rooms set status = 'selesai' where rooms.id = v_room.id;
+    return;
   end if;
 
   v_benih := floor(random() * 1000)::int;
 
-  insert into public.spins (
-    room_id, participant_id, room_question_id, nomor_giliran, benih_animasi
-  ) values (
-    v_room.id, coalesce(v_pemilik, v_pemanggil), v_pertanyaan.id,
-    v_room.nomor_giliran_sekarang, v_benih
-  );
+  -- Batasan unik (room_id, nomor_giliran) yang menolak putaran kedua.
+  -- Pesannya diganti kalimat yang bisa dibaca; yang menolak tetap batasannya.
+  begin
+    insert into public.spins (
+      room_id, participant_id, room_question_id, nomor_giliran, benih_animasi
+    ) values (
+      v_room.id, coalesce(v_pemilik, v_pemanggil), v_pertanyaan.id,
+      v_room.nomor_giliran_sekarang, v_benih
+    );
+  exception when unique_violation then
+    raise exception 'This turn already has its question.';
+  end;
 
   update public.room_questions set sudah_keluar = true
-   where id = v_pertanyaan.id;
+   where room_questions.id = v_pertanyaan.id;
 
   return query select v_pertanyaan.id, v_pertanyaan.teks,
                       v_room.nomor_giliran_sekarang, v_benih;
@@ -579,35 +648,41 @@ grant execute on function public.buat_room(text, jsonb, boolean, boolean) to ano
 grant execute on function public.putar_roda(text, text, text) to anon;
 ```
 
-- [ ] **Step 2: Terapkan dan verifikasi kolam habis menutup sesi**
+- [ ] **Step 2: Terapkan migrasi dan verifikasi kolam habis menutup sesi**
 
-Di SQL Editor, buat room berisi tepat dua pertanyaan lalu habiskan:
+Terapkan lewat CLI, bukan dashboard — langkah ini harus bisa dijalankan tanpa tangan manusia:
 
-```sql
-select * from public.buat_room(
-  'Juan',
-  '[{"teks":"Satu?","sumber":"custom"},{"teks":"Dua?","sumber":"custom"}]'::jsonb,
-  true, true);
-select public.mulai_sesi('KODE', 'HOST_TOKEN');
-select * from public.putar_roda('KODE', 'TOKEN', 'HOST_TOKEN');
-select public.giliran_berikutnya('KODE', 'HOST_TOKEN');
-select * from public.putar_roda('KODE', 'TOKEN', 'HOST_TOKEN');
-select public.giliran_berikutnya('KODE', 'HOST_TOKEN');
-select * from public.putar_roda('KODE', 'TOKEN', 'HOST_TOKEN');
+```bash
+set -a; . ./.env.local; set +a
+npx supabase db push --password "$SUPABASE_DB_PASSWORD"
 ```
 
-Expected: dua putaran pertama berhasil, yang ketiga gagal dengan `pertanyaan sudah habis`. Lalu:
+Lalu buat room berisi tepat dua pertanyaan dan habiskan. `scripts/sql.mjs` memuat `.env.local` sendiri:
 
-```sql
-select status from public.rooms where kode = 'KODE';
+```bash
+node scripts/sql.mjs "select * from public.buat_room('Juan', '[{\"teks\":\"One?\",\"sumber\":\"custom\"},{\"teks\":\"Two?\",\"sumber\":\"custom\"}]'::jsonb, true, true);"
 ```
 
-Expected: `selesai`.
+Catat `kode`, `host_token`, dan `participant_token` dari hasilnya, lalu jalankan berurutan:
+
+```bash
+node scripts/sql.mjs "select public.mulai_sesi('KODE','HOST_TOKEN');"
+node scripts/sql.mjs "select * from public.putar_roda('KODE','TOKEN','HOST_TOKEN');"
+node scripts/sql.mjs "select public.giliran_berikutnya('KODE','HOST_TOKEN');"
+node scripts/sql.mjs "select * from public.putar_roda('KODE','TOKEN','HOST_TOKEN');"
+node scripts/sql.mjs "select public.giliran_berikutnya('KODE','HOST_TOKEN');"
+node scripts/sql.mjs "select * from public.putar_roda('KODE','TOKEN','HOST_TOKEN');"
+node scripts/sql.mjs "select status from public.rooms where kode = 'KODE';"
+```
+
+Expected: dua putaran pertama mengembalikan satu baris berisi pertanyaan; putaran ketiga mengembalikan **nol baris** — bukan galat — dan `status` terakhir bernilai `selesai`.
+
+Kalau rangkaian ini perlu diulang, tulis `scripts/verifikasi-kolam.mjs` mengikuti pola `scripts/verifikasi-giliran.mjs` yang sudah ada, supaya sekali jalan.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/0005_opsi_dan_kolam.sql
+git add supabase/migrations/0007_opsi_dan_kolam.sql
 git commit -m "feat: opsi room dan kolam yang menyusut sampai sesi selesai"
 ```
 
@@ -1022,10 +1097,40 @@ pnpm dlx vercel@latest --prod
 
 ## Definisi Selesai Potongan 5
 
-1. `pnpm test` lulus, 53 uji — termasuk enam penjaga integritas bank. `pnpm build` bersih.
+1. `pnpm test` lulus seluruhnya, tidak ada yang gagal atau di-skip — termasuk **tujuh** penjaga integritas bank (enam struktural, satu penjaga nilai). Jumlahnya bertambah dari 62 uji di akhir Potongan 4. `pnpm build` bersih.
 2. Bank berisi 300–450 pertanyaan, tiap sub-tema dari taksonomi terisi 10–13, tanpa id maupun teks kembar.
 3. Layar buat room bisa mencentang per tema, per sub-tema, dan per pertanyaan; penghitung terpilih akurat.
 4. Menekan tema yang setengah tercentang **menambah sisanya**, bukan mengosongkan.
 5. Pertanyaan tulis sendiri ikut masuk kolam dan bisa keluar di roda.
 6. Dengan opsi buang-terpakai menyala, penghitung sisa turun tiap putaran dan sesi berpindah ke tampilan selesai saat habis, di semua layar.
 7. `src/data/contoh-pertanyaan.ts` sudah tidak ada.
+
+---
+
+## Catatan Perubahan
+
+Rencana ini ditulis sebelum Potongan 1–4 dikerjakan. Setelah keempatnya selesai, isinya diselaraskan dengan kenyataan repo. Yang berubah dan alasannya:
+
+1. **Bank dan taksonomi jadi berbahasa Inggris.** `CLAUDE.md` diperbarui setelah rencana ini ditulis: seluruh antarmuka berbahasa Inggris, dan teks pertanyaan berikut nama tema ikut tampil di layar peserta. Sepuluh tema dan 34 sub-tema diterjemahkan (`ROHANI → SPIRITUAL`, `PENGAKUAN → CONFESSIONS`, dan seterusnya); jumlah dan strukturnya tidak berubah.
+
+2. **Aturan nilai ditambahkan ke Task 1, berikut uji ke-7 sebagai penegaknya.** Bank ini dipakai di sesi fellowship. Tidak boleh ada muatan seksual, dan tidak boleh ada pertanyaan yang mengajak orang membanggakan atau meromantisasi dosa. Uji daftar kata terlarang dipasang supaya aturan itu punya penegak teknis, bukan cuma niat baik penulisnya.
+
+3. **Migrasi `0005_opsi_dan_kolam.sql` jadi `0007_opsi_dan_kolam.sql`.** Potongan 4 sudah memakai `0005_giliran.sql` dan `0006_opsi_room.sql`.
+
+4. **`ubah_opsi_join_telat` dihapus dari lingkup Potongan 5.** Potongan 4 sudah mengerjakannya di `0006_opsi_room.sql`. Yang tersisa di sini cuma `opsi_buang_terpakai`.
+
+5. **Pesan galat SQL diterjemahkan ke Inggris.** Rencana lama menulis `raise exception 'room tidak ditemukan'`. Pesan fungsi database ikut tampil di layar peserta, jadi ia antarmuka — aturan `CLAUDE.md` berlaku penuh. Migrasi `0003_pesan_antarmuka_inggris.sql` sudah menetapkan kalimat bakunya; Task 3 memakai kalimat yang sama.
+
+6. **`search_path` jadi `public, extensions`.** Rencana lama menulis `set search_path = public`, padahal `gen_random_bytes` tinggal di skema `extensions`. Fungsi akan gagal saat dipanggil, bukan saat dibuat.
+
+7. **Semua acuan kolom diawali nama tabelnya.** Klausa `returns table` membuat `teks`, `kode`, dan `room_id` jadi variabel keluaran; acuan tanpa awalan ditolak Postgres sebagai ambigu. Ini galat yang sudah pernah menjaring fungsi yang sama di Potongan 4.
+
+8. **Penanganan `unique_violation` pada `insert into spins` dikembalikan.** Rencana lama menulis insert telanjang, yang berarti dua putaran bersamaan memunculkan galat Postgres mentah, bukan kalimat yang bisa dibaca. Kunci anti dua putaran adalah keputusan yang tidak boleh dilonggarkan.
+
+9. **Kolam habis tidak lagi `raise exception`.** Rencana lama menutup sesi lalu melempar galat di baris berikutnya — padahal exception membatalkan seluruh transaksi, termasuk penutupan sesi itu sendiri. Sesi tidak akan pernah benar-benar tertutup. Sekarang fungsi mengembalikan nol baris, dan klien membacanya sebagai isyarat sesi selesai.
+
+10. **Verifikasi pindah dari SQL Editor ke CLI.** `npx supabase db push` dan `node scripts/sql.mjs` menggantikan langkah tempel-dan-Run di dashboard, supaya seluruh task bisa dijalankan tanpa tangan manusia.
+
+11. **Angka uji mati diganti patokan relatif.** Rencana lama mematok "53 uji". Akhir Potongan 4 sudah 62 uji, jadi angka itu tidak lagi bermakna. Yang dijaga sekarang: tidak ada uji yang gagal atau di-skip.
+
+12. **Step 6 Task 1 ditandai tidak menghalangi.** Pembacaan manual atas seluruh bank oleh pemilik project dipindah ke akhir Fase 1, bersama uji HP.

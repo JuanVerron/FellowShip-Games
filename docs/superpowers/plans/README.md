@@ -51,3 +51,11 @@ Yang benar saat itu terjadi: **perbaiki keadaannya, lalu perbarui berkas rencana
 ## Setelah Potongan 6
 
 Fase 1 selesai. Jalankan satu sesi fellowship sungguhan sebelum menyentuh apa pun dari Fase 2. Urutan Fase 2 memang sengaja belum ditetapkan — sesi pertama yang berhak menentukannya.
+
+## Catatan: Potongan 5 dan 6 dikerjakan dalam satu loop
+
+Menyimpang dari aturan "satu potongan satu sesi" di atas, Potongan 5 dan 6 dikerjakan berurutan dalam satu sesi loop, atas keputusan pemilik project pada 2026-08-29. Uji di HP sungguhan dilakukan sekali di akhir, untuk kedua potongan sekaligus.
+
+Alasan dan risikonya dicatat di bagian "Penyimpangan yang disengaja" pada rencana Potongan 6. Uji HP gabungan itu tetap syarat mati Fase 1 — ia ditunda, bukan dihapus.
+
+Kedua berkas rencana sudah diselaraskan dengan kenyataan repo sebelum loop dimulai (bahasa antarmuka, nomor migrasi, pesan galat, dan beberapa bug di contoh SQL). Rinciannya ada di bagian "Catatan Perubahan" masing-masing berkas.
