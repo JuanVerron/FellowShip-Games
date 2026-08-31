@@ -376,8 +376,8 @@ Expected: jendela B langsung menampilkan pertanyaan dan giliran yang benar, tanp
 
 - [x] **Step 3: Commit**
 
+```bash
 git add src/hooks/useRoom.ts src/lib/saluran.ts src/lib/__tests__/saluran.test.ts
-git add src/hooks/useRoom.ts
 git commit -m "feat: tarik ulang data saat tab kembali terlihat dan jaringan pulih"
 ```
 
@@ -394,7 +394,7 @@ git commit -m "feat: tarik ulang data saat tab kembali terlihat dan jaringan pul
 - Consumes: `sisipPertanyaan`, `pertanyaanValid` (Task 2); `useRoom` (Task 3)
 - Produces: komponen `<KotakSisipan kode={string} hostToken={string} />`
 
-- [ ] **Step 1: Buat kotak sisipan**
+- [x] **Step 1: Buat kotak sisipan**
 
 Buat `src/components/KotakSisipan.tsx`:
 
@@ -482,7 +482,7 @@ export function KotakSisipan({
 
 Pesan setelah berhasil berbunyi "Masuk kolam untuk putaran berikutnya", bukan sekadar "Berhasil". Itu yang mencegah host mengira pertanyaannya akan langsung keluar dan lalu bingung waktu roda memilih yang lain.
 
-- [ ] **Step 2: Pasang kotak sisipan dan ajakan masuk**
+- [x] **Step 2: Pasang kotak sisipan dan ajakan masuk**
 
 Di `src/app/room/[kode]/page.tsx`:
 
@@ -519,7 +519,7 @@ Lalu di blok sesi berjalan, tepat di bawah tombol "Giliran berikutnya", tambahka
       )}
 ```
 
-- [ ] **Step 3: Rapikan kerangka halaman**
+- [x] **Step 3: Rapikan kerangka halaman**
 
 Ganti `metadata` dan tambahkan `viewport` di `src/app/layout.tsx`:
 
@@ -541,7 +541,7 @@ export const viewport: Viewport = {
 
 `maximumScale: 5` disengaja: mengunci perbesaran memang membuat tampilan terasa rapi, tapi merampas kemampuan orang yang penglihatannya kurang untuk membaca pertanyaan.
 
-- [ ] **Step 4: Uji sisipan di tengah sesi**
+- [ ] **Step 4: Uji sisipan di tengah sesi** — **tidak dijalankan agen**, butuh dua jendela browser. Sisi database sudah dibuktikan `scripts/verifikasi-sisipan.mjs`. Masuk checklist uji HP
 
 Run: `pnpm dev`. Buka dua jendela, mulai sesi, putar sekali.
 
@@ -553,29 +553,29 @@ Expected: pesan "Masuk kolam untuk putaran berikutnya", penghitung sisa naik sat
 
 Expected: pertanyaan sisipan itu ikut berpeluang keluar seperti yang lain.
 
-- [ ] **Step 5: Uji ajakan masuk**
+- [ ] **Step 5: Uji ajakan masuk** — **tidak dijalankan agen**: ajakan masuk baru muncul setelah hidrasi, jadi tidak terjangkau `curl`. Masuk checklist uji HP
 
 Buka `/room/KODE` di jendela penyamaran baru yang belum pernah bergabung.
 Expected: tampilan "Kamu belum bergabung di room ini" berikut tombol menuju layar masuk — bukan tombol PUTAR yang mati tanpa keterangan.
 
-- [ ] **Step 6: Periksa tampilan di layar sempit**
+- [ ] **Step 6: Periksa tampilan di layar sempit** — **tidak dijalankan agen**, butuh DevTools. Masuk checklist uji HP
 
 Buka DevTools → mode perangkat → lebar **360px**. Telusuri semua layar: depan, buat room, masuk, ruang tunggu, sesi, selesai.
 
 Expected: tidak ada yang terpotong, tidak ada gulir mendatar, semua tombol tingginya minimal 44px, dan teks pertanyaan terbaca besar.
 
-- [ ] **Step 7: Periksa penghormatan pada "kurangi animasi"**
+- [ ] **Step 7: Periksa penghormatan pada "kurangi animasi"** — **terverifikasi statis**: `src/components/Roda.tsx` memakai awalan `motion-safe:`, jadi dengan "kurangi animasi" transisinya dilewati dan hasilnya langsung muncul. Konfirmasi visual masuk checklist uji HP
 
 DevTools → Rendering → **Emulate CSS prefers-reduced-motion: reduce**. Putar roda.
 Expected: hasilnya tetap muncul, tapi tanpa animasi putaran panjang.
 
-- [ ] **Step 8: Uji, build, commit, deploy**
+- [x] **Step 8: Uji, build, commit, deploy**
 
 ```bash
-pnpm test && pnpm build
+pnpm test && pnpm lint && pnpm build
 git add -A
 git commit -m "feat: sisipan pertanyaan, ajakan masuk, dan perapian tampilan HP"
-pnpm dlx vercel@latest --prod
+git push origin main   # Vercel men-deploy sendiri dari main
 ```
 
 ---
@@ -623,3 +623,11 @@ Uji HP gabungan di akhir menjadi syarat mati Fase 1. Ia tidak boleh dilewati, da
    Keputusan itu diangkat jadi fungsi murni `perluPasangUlang` di `src/lib/saluran.ts` supaya bisa diuji tanpa DOM — `vitest.config.mts` memakai `environment: 'node'` dan repo tidak punya perkakas uji React. `terjemahkanStatus` ikut pindah ke sana dan akhirnya punya uji.
 
    `muatUlang` dibuka ke pemanggil lewat pembungkus ber-acuan tetap, supaya layar bisa menawarkan coba-lagi tanpa memuat ulang seluruh halaman. Ia harus tetap hidup di dalam efek: aturan lint `react-hooks/set-state-in-effect` menolak `useCallback` pemanggil setState yang dipanggil langsung di badan efek.
+
+7. **Ajakan masuk ditaruh SESUDAH layar sesi selesai, bukan sebelumnya.** Rencana menyisipkannya sebelum pemeriksaan status `selesai`. Akibatnya, orang yang membuka tautan room yang sudah berakhir akan ditawari tombol Join — padahal `masuk_room` menolak room yang selesai. Itu jalan buntu yang menyesatkan. Urutannya dibalik: room yang selesai memberi tahu bahwa sesinya berakhir, dan ajakan masuk hanya muncul untuk room yang masih bisa dimasuki.
+
+8. **`themeColor` tidak dipatok `#000000`.** Rencana memakai satu nilai hitam. Aplikasi ini punya mode terang dan gelap, jadi satu nilai tetap pasti salah di salah satunya — hitam mati di layar terang, atau menyilaukan di layar gelap. Sekarang ia dua entri bermedia-query yang mengikuti token `--latar`: `#fdfaf6` untuk terang dan `#120d09` untuk gelap, hasil konversi nilai oklch-nya ke sRGB.
+
+9. **`KotakSisipan` memakai `Tombol` dan token, bukan kelas mentah.** Cuplikan rencana memakai `bg-black dark:bg-white` dan label berbahasa Indonesia (`+ Sisipkan pertanyaan`, `Tutup`, placeholder `Pertanyaan dadakan…`). Semuanya diganti komponen bersama, token, dan teks Inggris. Pesan berhasil dan pesan galat dibedakan secara visual, bukan cuma lewat kalimatnya.
+
+10. **Step 4, 5, dan 6 tidak dijalankan agen.** Ekstensi Chrome tidak tersambung di mesin ini, dan ajakan masuk baru muncul setelah hidrasi sehingga tidak terjangkau `curl`. Yang berhasil dibuktikan otomatis lewat `curl` ke dev server: halaman room mengembalikan 200, `maximum-scale=5` hadir, dan kedua `theme-color` hadir. Step 7 terverifikasi statis dari `motion-safe:` di `src/components/Roda.tsx`. Sisanya masuk `checklist-uji-hp-fase-1.md`.

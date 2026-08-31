@@ -21,8 +21,8 @@ Detailnya ada di bagian "Prasyarat Manual" di rencana Potongan 1.
 | 2 | `2026-08-28-potongan-2-room-dan-peserta.md` | Buat room dapat kode; orang lain masuk; daftar peserta hidup di semua HP | [x] |
 | 3 | `2026-08-28-potongan-3-roda-serentak.md` | Roda berputar dan berhenti di pertanyaan yang sama di semua layar | [x] |
 | 4 | `2026-08-28-potongan-4-giliran-dan-aturan-sesi.md` | Urutan diacak, tombol terkunci per giliran, host memindah giliran | [x] |
-| 5 | `2026-08-28-potongan-5-bank-penuh-dan-pemilihan.md` | Bank 300–450 pertanyaan, accordion pemilihan, opsi room, sesi selesai | [ ] |
-| 6 | `2026-08-28-potongan-6-penghalusan-sesi.md` | Sisipan saat sesi, pemulihan setelah HP terkunci, tampilan HP rapi | [ ] |
+| 5 | `2026-08-28-potongan-5-bank-penuh-dan-pemilihan.md` | Bank 374 pertanyaan, accordion pemilihan, opsi room, sesi selesai | [x] |
+| 6 | `2026-08-28-potongan-6-penghalusan-sesi.md` | Sisipan saat sesi, pemulihan setelah HP terkunci, tampilan HP rapi | [x] |
 
 Centang kolom terakhir setelah semua butir "Definisi Selesai" di rencana itu terpenuhi.
 
@@ -57,5 +57,7 @@ Fase 1 selesai. Jalankan satu sesi fellowship sungguhan sebelum menyentuh apa pu
 Menyimpang dari aturan "satu potongan satu sesi" di atas, Potongan 5 dan 6 dikerjakan berurutan dalam satu sesi loop, atas keputusan pemilik project pada 2026-08-29. Uji di HP sungguhan dilakukan sekali di akhir, untuk kedua potongan sekaligus.
 
 Alasan dan risikonya dicatat di bagian "Penyimpangan yang disengaja" pada rencana Potongan 6. Uji HP gabungan itu tetap syarat mati Fase 1 — ia ditunda, bukan dihapus.
+
+**Uji HP gabungan itu belum dikerjakan.** Butirnya ada di [`checklist-uji-hp-fase-1.md`](checklist-uji-hp-fase-1.md) — tujuh langkah yang tidak bisa diuji agen, pembacaan seluruh 374 pertanyaan, dan tujuh butir Definisi Selesai Potongan 6. Fase 1 belum boleh dinyatakan selesai sebelum semuanya tercentang.
 
 Kedua berkas rencana sudah diselaraskan dengan kenyataan repo sebelum loop dimulai (bahasa antarmuka, nomor migrasi, pesan galat, dan beberapa bug di contoh SQL). Rinciannya ada di bagian "Catatan Perubahan" masing-masing berkas.

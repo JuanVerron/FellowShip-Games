@@ -3,6 +3,7 @@
 import { use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Roda } from '@/components/Roda'
 import { Sakelar } from '@/components/Sakelar'
+import { KotakSisipan } from '@/components/KotakSisipan'
 import { TautanBeranda } from '@/components/TautanBeranda'
 import { Tombol, TautanTombol } from '@/components/Tombol'
 import { useRoom } from '@/hooks/useRoom'
@@ -225,6 +226,30 @@ export default function HalamanRoom({
     )
   }
 
+  // ——— Belum bergabung ———
+  //
+  // Sengaja SESUDAH layar sesi selesai. Room yang sudah selesai tidak bisa
+  // dimasuki lagi, jadi menawarkan Join di sana adalah jalan buntu; yang benar
+  // adalah memberi tahu bahwa sesinya sudah berakhir.
+  //
+  // Tanpa blok ini, orang yang membuka tautan room tanpa pernah bergabung
+  // melihat layar penuh tombol mati tanpa penjelasan.
+  if (!identitas) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-5 p-6 text-center">
+        <div>
+          <p className="text-sm text-teks-redup">Room code</p>
+          <p className="text-4xl font-bold tracking-[0.2em]">{room.kode}</p>
+        </div>
+        <p className="text-teks-redup">You have not joined this room yet.</p>
+        <TautanTombol href="/masuk" className="w-full">
+          Join this room
+        </TautanTombol>
+        <TautanBeranda />
+      </main>
+    )
+  }
+
   // ——— Ruang tunggu ———
   if (room.status === 'lobby') {
     return (
@@ -420,6 +445,10 @@ export default function HalamanRoom({
         >
           Next turn →
         </Tombol>
+      )}
+
+      {adalahHost && hostToken && (
+        <KotakSisipan kode={kodeBesar} hostToken={hostToken} />
       )}
 
       <div>
