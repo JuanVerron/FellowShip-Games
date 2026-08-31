@@ -263,7 +263,7 @@ git commit -m "feat: validasi dan pembungkus sisipan pertanyaan"
 - Consumes: `ambilRoom`, `ambilPeserta`, `ambilKolam`, `ambilPutaranTerakhir` (Potongan 2–3)
 - Produces: `useRoom(kode)` yang menarik ulang data saat tab kembali terlihat dan saat peristiwa `online` terjadi
 
-- [ ] **Step 1: Ganti isi hook**
+- [x] **Step 1: Ganti isi hook**
 
 Ganti seluruh isi `src/hooks/useRoom.ts`:
 
@@ -364,7 +364,7 @@ export function useRoom(kode: string) {
 }
 ```
 
-- [ ] **Step 2: Uji pemulihan secara manual**
+- [ ] **Step 2: Uji pemulihan secara manual** — **tidak dijalankan agen**: menyembunyikan tab tidak bisa disimulasikan tanpa browser. Masuk checklist uji HP di akhir Fase 1. Yang tertutup uji otomatis: `perluPasangUlang` dan `terjemahkanStatus` di `src/lib/__tests__/saluran.test.ts`
 
 Run: `pnpm dev`. Buka room di dua jendela dan mulai sesi.
 
@@ -374,9 +374,9 @@ Run: `pnpm dev`. Buka room di dua jendela dan mulai sesi.
 
 Expected: jendela B langsung menampilkan pertanyaan dan giliran yang benar, tanpa dimuat ulang manual.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
-```bash
+git add src/hooks/useRoom.ts src/lib/saluran.ts src/lib/__tests__/saluran.test.ts
 git add src/hooks/useRoom.ts
 git commit -m "feat: tarik ulang data saat tab kembali terlihat dan jaringan pulih"
 ```
@@ -615,3 +615,11 @@ Rencana ini ditulis sebelum Potongan 1–5 dikerjakan. Yang berubah setelah dise
 Risikonya diketahui dan diterima: bug Potongan 5 yang hanya muncul di HP sungguhan — tata letak 360px, perilaku Realtime saat layar terkunci, ukuran sasaran sentuh — baru ketahuan setelah Potongan 6 menumpuk di atasnya, sehingga penelusurannya lebih mahal. Yang menahan risiko itu sementara: `pnpm test`, `pnpm build`, dan verifikasi fungsi database lewat `scripts/sql.mjs` di tiap task.
 
 Uji HP gabungan di akhir menjadi syarat mati Fase 1. Ia tidak boleh dilewati, dan tujuh butir "Definisi Selesai" di atas tetap berlaku utuh.
+
+6. **Cuplikan hook di Task 3 tidak dipakai apa adanya — ia akan memundurkan Potongan 4.** Versi di rencana membuang tiga hal yang sudah ada di `useRoom` sejak Potongan 4: `statusSaluran` dan `diperbaruiPada` (keduanya dipakai indikator koneksi di `src/app/room/[kode]/page.tsx`, jadi halamannya akan gagal dikompilasi), dan pendengar `focus`. Rencana ditulis sebelum Potongan 4 ada, jadi ia tidak tahu keduanya sudah dibuat.
+
+   Menarik ulang data saat tab kembali terlihat juga **sudah** dikerjakan di Potongan 4. Yang benar-benar kurang, dan itulah isi Task 3 yang sesungguhnya: **saluran yang mati tidak pernah dipasang ulang.** HP yang dikunci beberapa menit bisa kembali dengan saluran ber-state `closed` atau `errored`; menarik ulang data sekali membuat layar benar sesaat, lalu ia diam selamanya karena perubahan berikutnya tidak pernah sampai. Sekarang saluran yang mati dibuang dan dipasang ulang saat tab kembali terlihat.
+
+   Keputusan itu diangkat jadi fungsi murni `perluPasangUlang` di `src/lib/saluran.ts` supaya bisa diuji tanpa DOM — `vitest.config.mts` memakai `environment: 'node'` dan repo tidak punya perkakas uji React. `terjemahkanStatus` ikut pindah ke sana dan akhirnya punya uji.
+
+   `muatUlang` dibuka ke pemanggil lewat pembungkus ber-acuan tetap, supaya layar bisa menawarkan coba-lagi tanpa memuat ulang seluruh halaman. Ia harus tetap hidup di dalam efek: aturan lint `react-hooks/set-state-in-effect` menolak `useCallback` pemanggil setState yang dipanggil langsung di badan efek.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ambilKolam,
   ambilPutaranTerakhir,
@@ -8,20 +8,16 @@ import {
   type Putaran,
 } from '@/lib/putaran'
 import { ambilPeserta, ambilRoom, type Peserta, type Room } from '@/lib/room'
+import {
+  perluPasangUlang,
+  terjemahkanStatus,
+  type StatusSaluran,
+} from '@/lib/saluran'
 import { buatKlienSupabase } from '@/lib/supabase'
 
-export type StatusSaluran =
-  | 'menyambung'
-  | 'tersambung'
-  | 'terputus'
+export type { StatusSaluran }
 
-function terjemahkanStatus(status: string): StatusSaluran {
-  if (status === 'SUBSCRIBED') return 'tersambung'
-  if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-    return 'terputus'
-  }
-  return 'menyambung'
-}
+const TABEL_DISIMAK = ['rooms', 'participants', 'room_questions', 'spins'] as const
 
 export function useRoom(kode: string) {
   const [room, setRoom] = useState<Room | null>(null)
@@ -32,6 +28,12 @@ export function useRoom(kode: string) {
   const [galat, setGalat] = useState<string | null>(null)
   const [statusSaluran, setStatusSaluran] = useState<StatusSaluran>('menyambung')
   const [diperbaruiPada, setDiperbaruiPada] = useState<number | null>(null)
+
+  // Diisi oleh efek di bawah, lalu dibuka ke pemanggil lewat pembungkus yang
+  // acuannya tetap. `muatUlang` sendiri harus hidup di dalam efek: aturan
+  // react-hooks/set-state-in-effect menolak useCallback pemanggil setState
+  // yang dipanggil langsung di badan efek.
+  const muatUlangRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     let dibatalkan = false
@@ -68,33 +70,52 @@ export function useRoom(kode: string) {
         setGalat(null)
         setDiperbaruiPada(Date.now())
       } catch (e) {
-        if (!dibatalkan) setGalat(e instanceof Error ? e.message : 'Could not load room')
+        if (!dibatalkan) {
+          setGalat(e instanceof Error ? e.message : 'Could not load room')
+        }
       } finally {
         if (!dibatalkan) setMemuat(false)
       }
     }
 
-    void muatUlang()
+    muatUlangRef.current = () => void muatUlang()
+    let saluran = pasangSaluran()
 
-    const saluran = klien.channel(`room:${kode}`)
-    for (const tabel of ['rooms', 'participants', 'room_questions', 'spins']) {
-      saluran.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: tabel },
-        () => void muatUlang(),
-      )
+    function pasangSaluran() {
+      const baru = klien.channel(`room:${kode}`)
+      for (const tabel of TABEL_DISIMAK) {
+        baru.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: tabel },
+          () => void muatUlang(),
+        )
+      }
+      baru.subscribe((status) => {
+        if (!dibatalkan) setStatusSaluran(terjemahkanStatus(status))
+      })
+      return baru
     }
-    saluran.subscribe((status) => {
-      if (!dibatalkan) setStatusSaluran(terjemahkanStatus(status))
-    })
+
+    void muatUlang()
 
     // Browser HP menangguhkan tab yang tidak di depan dan memutus WebSocket-nya.
     // Siaran yang lewat selama itu hilang dan tidak dikirim ulang, jadi begitu
     // tab kembali terlihat keadaannya ditarik ulang alih-alih menunggu siaran
     // berikutnya yang mungkin baru datang lama sesudahnya. Ini bukan polling:
     // dipicu peristiwa, bukan pewaktu.
+    //
+    // Menarik ulang data saja tidak cukup. Kalau salurannya sendiri sudah mati,
+    // layar akan benar sekali lalu diam lagi selamanya karena perubahan
+    // berikutnya tidak pernah sampai. Jadi saluran yang mati dibuang dan
+    // dipasang ulang di sini.
     function saatKembaliTerlihat() {
-      if (document.visibilityState === 'visible') void muatUlang()
+      if (document.visibilityState !== 'visible') return
+      void muatUlang()
+
+      if (perluPasangUlang(saluran.state)) {
+        void klien.removeChannel(saluran)
+        saluran = pasangSaluran()
+      }
     }
 
     document.addEventListener('visibilitychange', saatKembaliTerlihat)
@@ -110,6 +131,8 @@ export function useRoom(kode: string) {
     }
   }, [kode])
 
+  const muatUlangSekarang = useCallback(() => muatUlangRef.current(), [])
+
   return {
     room,
     peserta,
@@ -119,5 +142,8 @@ export function useRoom(kode: string) {
     galat,
     statusSaluran,
     diperbaruiPada,
+    // Dibuka supaya layar bisa menawarkan coba-lagi saat sambungan putus,
+    // tanpa memaksa orang memuat ulang seluruh halaman.
+    muatUlang: muatUlangSekarang,
   }
 }
