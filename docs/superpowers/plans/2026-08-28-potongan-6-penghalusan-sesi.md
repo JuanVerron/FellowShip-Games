@@ -154,13 +154,17 @@ git commit -m "feat: fungsi sisip pertanyaan untuk host"
   - `pertanyaanValid(teks: string): boolean`
   - `sisipPertanyaan(kode: string, hostToken: string, teks: string): Promise<string>`
 
-- [ ] **Step 1: Tulis uji yang gagal**
+- [x] **Step 1: Tulis uji yang gagal**
 
 Buat `src/lib/__tests__/sisipan.test.ts`:
 
 ```typescript
 import { describe, expect, it } from 'vitest'
-import { pertanyaanValid, rapikanPertanyaan } from '@/lib/sisipan'
+import {
+  PANJANG_SISIPAN_MAKS,
+  pertanyaanValid,
+  rapikanPertanyaan,
+} from '@/lib/sisipan'
 
 describe('rapikanPertanyaan', () => {
   it('membuang spasi ujung dan merapatkan spasi ganda', () => {
@@ -184,15 +188,26 @@ describe('pertanyaanValid', () => {
   it('menolak yang lebih dari 200 karakter', () => {
     expect(pertanyaanValid(`${'a'.repeat(200)}?`)).toBe(false)
   })
+
+  // Batas atasnya harus sama persis dengan batas di sisip_pertanyaan. Kalau
+  // salah satunya bergeser, orang mengetik pertanyaan yang lolos di browser
+  // lalu ditolak database — galat yang muncul entah dari mana.
+  it('menerima yang tepat 200 karakter', () => {
+    expect(pertanyaanValid('a'.repeat(PANJANG_SISIPAN_MAKS))).toBe(true)
+  })
+
+  it('menghitung panjang setelah dirapikan, bukan sebelumnya', () => {
+    expect(pertanyaanValid(`  ${'a'.repeat(PANJANG_SISIPAN_MAKS)}  `)).toBe(true)
+  })
 })
 ```
 
-- [ ] **Step 2: Jalankan uji dan pastikan gagal**
+- [x] **Step 2: Jalankan uji dan pastikan gagal**
 
 Run: `pnpm test`
 Expected: GAGAL — `Cannot find module '@/lib/sisipan'`.
 
-- [ ] **Step 3: Tulis implementasinya**
+- [x] **Step 3: Tulis implementasinya**
 
 Buat `src/lib/sisipan.ts`:
 
@@ -225,12 +240,12 @@ export async function sisipPertanyaan(
 }
 ```
 
-- [ ] **Step 4: Jalankan uji dan pastikan lulus**
+- [x] **Step 4: Jalankan uji dan pastikan lulus**
 
 Run: `pnpm test`
 Expected: LULUS — semua uji hijau, tidak ada yang gagal atau di-skip.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/sisipan.ts src/lib/__tests__/sisipan.test.ts
