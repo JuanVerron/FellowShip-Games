@@ -205,6 +205,26 @@ export default function HalamanRoom({
     )
   }
 
+  // ——— Sesi selesai ———
+  //
+  // Didahulukan dari ruang tunggu dan sesi berjalan: begitu putar_roda
+  // menutup room karena kolamnya habis, Realtime mendorong status ini ke
+  // semua layar dan semuanya berpindah ke sini bersamaan.
+  if (room.status === 'selesai') {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
+        <p aria-hidden className="text-5xl">
+          🎉
+        </p>
+        <h1 className="text-3xl font-bold">That is a wrap</h1>
+        <p className="text-teks-redup">
+          You went through every question. Thanks for playing.
+        </p>
+        <TautanBeranda />
+      </main>
+    )
+  }
+
   // ——— Ruang tunggu ———
   if (room.status === 'lobby') {
     return (
@@ -291,10 +311,18 @@ export default function HalamanRoom({
   // Roda diberi indeks di kolam, bukan id: yang berputar adalah posisi segmen.
   // findIndex mengembalikan -1 kalau pertanyaannya sudah tidak ada di kolam,
   // dan -1 yang lolos ke perhitungan sudut memutar roda ke arah yang salah.
+  //
+  // Pertanyaan yang baru saja keluar sengaja tetap ada di roda pada putaran
+  // itu. Kalau langsung hilang, roda berubah bentuk tepat saat orang sedang
+  // melihat hasilnya.
+  const kolamTampil = room.opsiBuangTerpakai
+    ? kolam.filter((p) => !p.sudahKeluar || p.id === putaran?.roomQuestionId)
+    : kolam
   const indeksDitemukan = putaran
-    ? kolam.findIndex((p) => p.id === putaran.roomQuestionId)
+    ? kolamTampil.findIndex((p) => p.id === putaran.roomQuestionId)
     : -1
   const indeksTerpilih = indeksDitemukan >= 0 ? indeksDitemukan : null
+  const sisaPertanyaan = kolam.filter((p) => !p.sudahKeluar).length
   const giliranIniSudahDiputar =
     putaran !== null && putaran.nomorGiliran === room.nomorGiliranSekarang
 
@@ -336,11 +364,17 @@ export default function HalamanRoom({
       </div>
 
       <Roda
-        daftar={kolam.map((p) => p.teks)}
+        daftar={kolamTampil.map((p) => p.teks)}
         indeksTerpilih={indeksTerpilih}
         benih={putaran?.benihAnimasi ?? 0}
         nomorGiliran={putaran?.nomorGiliran ?? null}
       />
+
+      {room.opsiBuangTerpakai && (
+        <p aria-live="polite" className="text-center text-sm text-teks-redup">
+          {sisaPertanyaan} {sisaPertanyaan === 1 ? 'question' : 'questions'} left
+        </p>
+      )}
 
       {identitas ? (
         <Tombol

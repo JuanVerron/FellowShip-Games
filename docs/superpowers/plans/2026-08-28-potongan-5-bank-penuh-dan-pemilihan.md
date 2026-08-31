@@ -763,7 +763,7 @@ export async function buatRoom(
 }
 ```
 
-- [ ] **Step 2: Buat komponen penjelajah bank**
+- [x] **Step 2: Buat komponen penjelajah bank**
 
 Buat `src/components/PenjelajahBank.tsx`:
 
@@ -893,7 +893,7 @@ export function PenjelajahBank({
 }
 ```
 
-- [ ] **Step 3: Rombak layar buat room**
+- [x] **Step 3: Rombak layar buat room**
 
 Ganti seluruh isi `src/app/buat/page.tsx`:
 
@@ -1035,7 +1035,7 @@ export default function BuatRoom() {
 }
 ```
 
-- [ ] **Step 4: Tampilkan sisa pertanyaan dan tampilan sesi selesai**
+- [x] **Step 4: Tampilkan sisa pertanyaan dan tampilan sesi selesai**
 
 Di `src/app/room/[kode]/page.tsx`, sisipkan penanganan status `selesai` **sebelum** blok ruang tunggu:
 
@@ -1074,7 +1074,7 @@ Ganti `daftar={kolam.map((p) => p.teks)}` menjadi `daftar={kolamTampil.map((p) =
 
 Pertanyaan yang baru saja keluar sengaja tetap ditampilkan di roda pada putaran itu — kalau langsung hilang, roda akan melompat berubah bentuk tepat saat orang sedang melihat hasilnya.
 
-- [ ] **Step 5: Hapus pertanyaan contoh yang sudah tidak dipakai**
+- [x] **Step 5: Hapus pertanyaan contoh yang sudah tidak dipakai**
 
 ```bash
 rm src/data/contoh-pertanyaan.ts
@@ -1083,7 +1083,7 @@ rm src/data/contoh-pertanyaan.ts
 Run: `pnpm build`
 Expected: bersih. Kalau ada galat impor `contoh-pertanyaan`, ada berkas yang masih memakainya — hapus impornya di sana.
 
-- [ ] **Step 6: Uji alur penuh di browser**
+- [ ] **Step 6: Uji alur penuh di browser** — **sebagian**: render diverifikasi lewat `curl` (lihat Catatan Perubahan butir 15); klik-per-klik ikut uji HP gabungan di akhir Fase 1
 
 Run: `pnpm dev`
 
@@ -1096,13 +1096,13 @@ Expected: angkanya cocok dengan jumlah pertanyaan yang tercentang plus satu.
 
 Expected: penghitung "Sisa N pertanyaan" turun tiap putaran, dan saat habis semua layar berpindah ke tampilan **Sesi selesai**.
 
-- [ ] **Step 7: Uji, build, commit, deploy**
+- [x] **Step 7: Uji, build, commit, deploy**
 
 ```bash
-pnpm test && pnpm build
+pnpm test && pnpm lint && pnpm build
 git add -A
 git commit -m "feat: penjelajah bank, opsi room, dan tampilan sesi selesai"
-pnpm dlx vercel@latest --prod
+git push origin main   # Vercel men-deploy sendiri dari main
 ```
 
 ---
@@ -1148,3 +1148,11 @@ Rencana ini ditulis sebelum Potongan 1–4 dikerjakan. Setelah keempatnya selesa
 12. **Step 6 Task 1 ditandai tidak menghalangi.** Pembacaan manual atas seluruh bank oleh pemilik project dipindah ke akhir Fase 1, bersama uji HP.
 
 13. **Perubahan klien `buatRoom` ditarik maju dari Task 4 ke Task 3.** Migrasi `0007` menghapus `buat_room(text, text[])`, sedangkan `src/lib/room.ts` masih memanggil tanda tangan itu. Karena tiap task di-push ke `main` dan Vercel langsung men-deploy, membiarkannya sampai Task 4 berarti aplikasi di produksi tidak bisa membuat room selama satu iterasi penuh. Rencana lama menganggap deploy hanya sekali di akhir potongan, jadi jendela rusak itu tidak terlihat saat rencana ditulis. `buatRoom` dan pemanggilnya di `src/app/buat/page.tsx` disesuaikan seadanya di Task 3 — kolam masih dari daftar contoh dan kedua opsi terkunci di bawaannya — supaya setiap commit di `main` tetap bisa dibuka. Task 4 tetap mengganti layarnya seutuhnya.
+
+14. **Task 4 memakai komponen dan token yang sudah ada, bukan kelas mentah.** Cuplikan di rencana menulis `bg-black dark:bg-white`, `text-red-600`, dan `border-t bg-white dark:bg-black`. Repo sudah punya sistem token (`--aksi`, `--teks-redup`, `--garis`, `--bahaya`, `--radius`) dan tiga komponen bersama (`Tombol`, `Sakelar`, `TautanBeranda`). Menyalin cuplikan itu apa adanya akan mengulang persis bug yang sudah diperbaiki di commit `db404ef` — "tombol redup di dark mode HP, dan warna yang tidak pernah ada". Kedua sakelar opsi memakai `Sakelar`, yang memang dibuat untuk itu.
+
+    Kotak centang tiga keadaan di `PenjelajahBank` memakai `role="checkbox"` dengan `aria-checked="mixed"`, bukan `<button>` dengan `<span>` bertanda. Rencana lama tidak mengumumkan keadaan apa pun ke pembaca layar. Baris pertanyaan juga dijadikan **satu** kontrol, bukan kotak dan teks terpisah, supaya isinya tidak diumumkan dua kali.
+
+    Semua teks antarmuka di Task 4 diterjemahkan ke Inggris, termasuk `aria-label` — itu dibaca pembaca layar, jadi ia antarmuka.
+
+15. **Step 6 dikerjakan sebagian.** Ekstensi Chrome tidak tersambung di mesin ini, jadi klik-per-klik tidak bisa dijalankan agen. Yang dibuktikan sebagai gantinya: `curl http://localhost:3000/buat` mengembalikan 200, sepuluh tema terender dengan `role="checkbox"` dan `aria-checked="false"`, penghitung menunjukkan `0 picked`, kedua sakelar dan tombol Create hadir, dan tidak ada teks Indonesia yang bocor ke antarmuka. Ketepatan penghitung saat dicentang dan perpindahan ke layar sesi selesai ikut uji HP gabungan di akhir Fase 1.
