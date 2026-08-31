@@ -26,7 +26,18 @@ export default function BuatRoom() {
     setMengirim(true)
     setGalat(null)
     try {
-      const { kode, identitas } = await buatRoom(rapi, CONTOH_PERTANYAAN)
+      // Sementara: kolam masih dari daftar contoh, dan kedua opsi dikunci
+      // di bawaannya. Task 4 menggantinya dengan penjelajah bank dan dua
+      // sakelar sungguhan.
+      const { kode, identitas } = await buatRoom(
+        rapi,
+        CONTOH_PERTANYAAN.map((teks) => ({
+          teks,
+          sumber: 'custom' as const,
+          bankId: null,
+        })),
+        { buangTerpakai: true, izinkanJoinTelat: true },
+      )
       simpanIdentitas(kode, identitas)
       router.push(`/room/${kode}`)
     } catch (e) {

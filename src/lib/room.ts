@@ -55,12 +55,26 @@ export function kePeserta(baris: BarisPeserta): Peserta {
   }
 }
 
+// Satu butir kolam. `sumber` dan `bankId` ikut dikirim karena room_questions
+// menyimpan asal-usulnya, bukan cuma teksnya.
+export type ButirPertanyaan = {
+  teks: string
+  sumber: 'bank' | 'custom'
+  bankId: string | null
+}
+
 export async function buatRoom(
   namaHost: string,
-  pertanyaan: string[],
+  pertanyaan: ButirPertanyaan[],
+  opsi: { buangTerpakai: boolean; izinkanJoinTelat: boolean },
 ): Promise<{ kode: string; identitas: Identitas }> {
   const { data, error } = await buatKlienSupabase()
-    .rpc('buat_room', { p_nama_host: namaHost, p_pertanyaan: pertanyaan })
+    .rpc('buat_room', {
+      p_nama_host: namaHost,
+      p_pertanyaan: pertanyaan,
+      p_buang_terpakai: opsi.buangTerpakai,
+      p_izinkan_join_telat: opsi.izinkanJoinTelat,
+    })
     .single()
 
   if (error) throw new Error(error.message)

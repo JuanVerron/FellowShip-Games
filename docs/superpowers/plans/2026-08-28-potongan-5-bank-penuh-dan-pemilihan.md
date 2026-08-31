@@ -451,7 +451,7 @@ git commit -m "feat: pengelompokan bank dan aritmetika pencentangan"
   - `public.buat_room(p_nama_host text, p_pertanyaan jsonb, p_buang_terpakai boolean, p_izinkan_join_telat boolean)` — **menggantikan** versi dua argumen
   - `public.putar_roda(p_kode text, p_token text, p_host_token text)` — versi yang menghormati `opsi_buang_terpakai`, dan saat kolam habis menutup sesi lalu mengembalikan **nol baris** (bukan galat). Task 4 harus membaca nol baris sebagai isyarat sesi selesai.
 
-- [ ] **Step 1: Tulis berkas migrasi**
+- [x] **Step 1: Tulis berkas migrasi**
 
 Buat `supabase/migrations/0007_opsi_dan_kolam.sql`:
 
@@ -660,7 +660,7 @@ grant execute on function public.buat_room(text, jsonb, boolean, boolean) to ano
 grant execute on function public.putar_roda(text, text, text) to anon;
 ```
 
-- [ ] **Step 2: Terapkan migrasi dan verifikasi kolam habis menutup sesi**
+- [x] **Step 2: Terapkan migrasi dan verifikasi kolam habis menutup sesi**
 
 Terapkan lewat CLI, bukan dashboard — langkah ini harus bisa dijalankan tanpa tangan manusia:
 
@@ -689,9 +689,9 @@ node scripts/sql.mjs "select status from public.rooms where kode = 'KODE';"
 
 Expected: dua putaran pertama mengembalikan satu baris berisi pertanyaan; putaran ketiga mengembalikan **nol baris** — bukan galat — dan `status` terakhir bernilai `selesai`.
 
-Kalau rangkaian ini perlu diulang, tulis `scripts/verifikasi-kolam.mjs` mengikuti pola `scripts/verifikasi-giliran.mjs` yang sudah ada, supaya sekali jalan.
+Rangkaiannya sudah ditulis sebagai `scripts/verifikasi-kolam.mjs`, mengikuti pola `scripts/verifikasi-giliran.mjs`. Jalankan dengan `node scripts/verifikasi-kolam.mjs`; ia memakai anon key dan RPC, jalur yang sama persis dengan browser. Sepuluh pemeriksaan, semuanya harus lulus.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add supabase/migrations/0007_opsi_dan_kolam.sql
@@ -715,7 +715,7 @@ git commit -m "feat: opsi room dan kolam yang menyusut sampai sesi selesai"
   - `type ButirPertanyaan = { teks: string; sumber: 'bank' | 'custom'; bankId: string | null }`
   - `buatRoom(namaHost: string, pertanyaan: ButirPertanyaan[], opsi: { buangTerpakai: boolean; izinkanJoinTelat: boolean }): Promise<{ kode: string; identitas: Identitas }>`
 
-- [ ] **Step 1: Ubah `buatRoom`**
+- [x] **Step 1: Ubah `buatRoom`** — **dikerjakan lebih awal di Task 3**, lihat Catatan Perubahan butir 13
 
 Di `src/lib/room.ts`, ganti fungsi `buatRoom` dan tambahkan tipenya:
 
@@ -1146,3 +1146,5 @@ Rencana ini ditulis sebelum Potongan 1–4 dikerjakan. Setelah keempatnya selesa
 11. **Angka uji mati diganti patokan relatif.** Rencana lama mematok "53 uji". Akhir Potongan 4 sudah 62 uji, jadi angka itu tidak lagi bermakna. Yang dijaga sekarang: tidak ada uji yang gagal atau di-skip.
 
 12. **Step 6 Task 1 ditandai tidak menghalangi.** Pembacaan manual atas seluruh bank oleh pemilik project dipindah ke akhir Fase 1, bersama uji HP.
+
+13. **Perubahan klien `buatRoom` ditarik maju dari Task 4 ke Task 3.** Migrasi `0007` menghapus `buat_room(text, text[])`, sedangkan `src/lib/room.ts` masih memanggil tanda tangan itu. Karena tiap task di-push ke `main` dan Vercel langsung men-deploy, membiarkannya sampai Task 4 berarti aplikasi di produksi tidak bisa membuat room selama satu iterasi penuh. Rencana lama menganggap deploy hanya sekali di akhir potongan, jadi jendela rusak itu tidak terlihat saat rencana ditulis. `buatRoom` dan pemanggilnya di `src/app/buat/page.tsx` disesuaikan seadanya di Task 3 — kolam masih dari daftar contoh dan kedua opsi terkunci di bawaannya — supaya setiap commit di `main` tetap bisa dibuka. Task 4 tetap mengganti layarnya seutuhnya.
